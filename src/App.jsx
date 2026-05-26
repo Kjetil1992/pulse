@@ -113,6 +113,18 @@ const styles = `
   .top-name { flex: 1; font-size: .9rem; }
   .top-count { font-family: 'DM Mono', monospace; font-size: .75rem; color: #F97316; }
 
+  /* PR */
+  .pr-group { margin-bottom: 28px; }
+  .pr-group-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #F97316; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+  .pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .pr-card { background: #141414; border: 1px solid #222; padding: 14px; position: relative; overflow: hidden; transition: border-color .15s; }
+  .pr-card:hover { border-color: #F97316; }
+  .pr-card::before { content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #F97316; }
+  .pr-exercise { font-size: .8rem; font-weight: 500; margin-bottom: 8px; color: #F5F5F0; line-height: 1.3; }
+  .pr-weight { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #F97316; line-height: 1; }
+  .pr-weight-unit { font-family: 'DM Mono', monospace; font-size: .65rem; color: #666; margin-left: 2px; }
+  .pr-detail { font-family: 'DM Mono', monospace; font-size: .65rem; color: #444; margin-top: 4px; }
+
   /* GRAPHS */
   .graph-section { margin-bottom: 32px; }
   .graph-title { font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: 3px; text-transform: uppercase; color: #666; margin-bottom: 12px; }
@@ -458,6 +470,20 @@ export default function App() {
     setProgForm(EMPTY_FORM);
   }
 
+  // PR
+  const prByGroup = {};
+  history.forEach(session => {
+    session.exercises.forEach(ex => {
+      const group = ex.group || "Annet";
+      const weight = parseFloat(ex.weight) || 0;
+      if (!prByGroup[group]) prByGroup[group] = {};
+      if (!prByGroup[group][ex.name] || weight > prByGroup[group][ex.name].weight) {
+        prByGroup[group][ex.name] = { weight, sets: ex.sets, reps: ex.reps, date: session.date_key };
+      }
+    });
+  });
+  const prGroups = Object.keys(EXERCISES_BY_GROUP).filter(g => prByGroup[g]);
+
   // Stats
   const [selectedExercise, setSelectedExercise] = useState("");
   const totalSessions = history.length;
@@ -518,7 +544,7 @@ export default function App() {
         </div>
 
         <div className="tabs">
-          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["history","HISTORIKK"],["stats","STATISTIKK"]].map(([key,label]) => (
+          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["history","HISTORIKK"],["pr","PR"],["stats","STATISTIKK"]].map(([key,label]) => (
             <button key={key} className={`tab${tab===key?" active":""}`} onClick={() => setTab(key)}>{label}</button>
           ))}
         </div>
@@ -768,6 +794,37 @@ export default function App() {
                         <div className="hist-ex-name">{ex.name}</div>
                         <div className="hist-ex-sets">{ex.sets}×{ex.reps}{ex.weight ? ` @ ${ex.weight}kg` : ""}</div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ── PR ── */}
+          {tab === "pr" && (
+            <>
+              <div className="section-title">PERSONLIGE <span>REKORDER</span></div>
+              {prGroups.length === 0 ? (
+                <div className="empty">logg økter for å se dine rekorder</div>
+              ) : prGroups.map(group => (
+                <div key={group} className="pr-group">
+                  <div className="pr-group-title">{group}</div>
+                  <div className="pr-grid">
+                    {Object.entries(prByGroup[group])
+                      .sort((a, b) => b[1].weight - a[1].weight)
+                      .map(([name, pr]) => (
+                        <div key={name} className="pr-card">
+                          <div className="pr-exercise">{name}</div>
+                          <div>
+                            <span className="pr-weight">{pr.weight > 0 ? pr.weight : "–"}</span>
+                            {pr.weight > 0 && <span className="pr-weight-unit">kg</span>}
+                          </div>
+                          {pr.sets && pr.reps && (
+                            <div className="pr-detail">{pr.sets}×{pr.reps} reps</div>
+                          )}
+                          <div className="pr-detail">{pr.date}</div>
+                        </div>
                     ))}
                   </div>
                 </div>

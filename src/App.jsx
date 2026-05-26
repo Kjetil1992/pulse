@@ -865,7 +865,7 @@ export default function App() {
         )}
 
         <div className="header">
-          <button onClick={() => setSection(null)} style={{background:"none",border:"none",cursor:"pointer",padding:0,lineHeight:1}}>
+          <button onClick={() => setSection(null)} style={{background:"none",border:"none",cursor:"pointer",padding:0,lineHeight:1,color:"inherit"}}>
             <h1>IRON<span style={{color:ACCENT}}>LOG</span></h1>
           </button>
           <span style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",background:"var(--surface2)",border:"1px solid var(--border)",padding:"2px 8px",marginLeft:"4px"}}>{section === "løping" ? "LØPING" : "STYRKE"}</span>

@@ -13,8 +13,8 @@ function themeVars(dark) {
     }
   ` : `
     :root {
-      --bg: #F5F5F0; --surface: #FFFFFF; --surface2: #EBEBEB;
-      --border: #E0E0E0; --border2: #CCCCCC;
+      --bg: #F0ECE4; --surface: #FAF7F2; --surface2: #E8E3DA;
+      --border: #DDD8CF; --border2: #C8C3BA;
       --text: #111111; --muted: #888; --muted2: #AAAAAA;
     }
   `;

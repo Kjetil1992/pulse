@@ -177,6 +177,28 @@ const styles = `
   .load-banner-text { font-family: 'DM Mono', monospace; font-size: .7rem; color: #F97316; letter-spacing: 1px; flex: 1; }
   .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
+  /* RUNNING */
+  .run-type-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 16px; }
+  .run-type-btn { padding: 8px 4px; border: 1px solid var(--border); background: none; color: var(--text); font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .15s; text-align: center; }
+  .run-type-btn.active { border-color: #F97316; color: #F97316; }
+  .run-time-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .pace-display { background: var(--surface2); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .pace-val { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #F97316; line-height: 1; }
+  .pace-label { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .run-entry { border: 1px solid var(--border); background: var(--surface); margin-bottom: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; animation: slideIn .2s ease; }
+  .run-dist { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #F97316; line-height: 1; min-width: 60px; }
+  .run-dist-unit { font-family: 'DM Mono', monospace; font-size: .6rem; color: var(--muted); }
+  .run-meta { flex: 1; }
+  .run-meta-date { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1px; }
+  .run-meta-detail { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--muted); margin-top: 3px; }
+  .run-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+  .run-pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+  .run-pr-card { background: var(--surface); border: 1px solid var(--border); padding: 14px; position: relative; overflow: hidden; }
+  .run-pr-card::before { content:""; position:absolute; top:0; left:0; width:3px; height:100%; background:#F97316; }
+  .run-pr-label { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .run-pr-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: #F97316; line-height: 1; }
+  .run-pr-sub { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted2); margin-top: 3px; }
+
   /* SUBNAV */
   .subnav { display: flex; gap: 4px; background: var(--surface2); padding: 4px; margin-bottom: 24px; }
   .subnav-btn { flex: 1; font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: 2px; text-transform: uppercase; padding: 9px 4px; border: none; background: none; color: var(--muted); cursor: pointer; transition: all .2s; text-align: center; }
@@ -385,6 +407,50 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [tab, setTab] = useState("dashboard");
   const [subNav, setSubNav] = useState("history");
+  const [runSubNav, setRunSubNav] = useState("log");
+  const [runs, setRuns] = useState([]);
+  const [runForm, setRunForm] = useState({ distance: "", hours: "", minutes: "", seconds: "", type: "Vei", notes: "" });
+  const [runSaved, setRunSaved] = useState(false);
+
+  async function loadRuns() {
+    const { data } = await supabase.from("runs").select("*").order("date_key", { ascending: false });
+    if (data) setRuns(data);
+  }
+
+  async function saveRun() {
+    const dist = parseFloat(runForm.distance);
+    const secs = (parseInt(runForm.hours)||0)*3600 + (parseInt(runForm.minutes)||0)*60 + (parseInt(runForm.seconds)||0);
+    if (!dist || !secs) return;
+    const { data, error } = await supabase.from("runs").insert({
+      user_id: user.id, date: today(), date_key: todayKey(),
+      distance: dist, duration: secs, type: runForm.type, notes: runForm.notes
+    }).select().single();
+    if (error) { alert("Feil: " + error.message); return; }
+    if (data) setRuns(prev => [data, ...prev]);
+    setRunForm({ distance: "", hours: "", minutes: "", seconds: "", type: "Vei", notes: "" });
+    setRunSaved(true);
+    setTimeout(() => setRunSaved(false), 2500);
+  }
+
+  async function deleteRun(id) {
+    await supabase.from("runs").delete().eq("id", id);
+    setRuns(prev => prev.filter(r => r.id !== id));
+  }
+
+  function fmtDuration(secs) {
+    const h = Math.floor(secs/3600);
+    const m = Math.floor((secs%3600)/60);
+    const s = secs%60;
+    return h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  function calcPace(distance, duration) {
+    if (!distance || !duration) return null;
+    const paceSeconds = duration / distance;
+    const pm = Math.floor(paceSeconds / 60);
+    const ps = Math.round(paceSeconds % 60);
+    return `${pm}:${String(ps).padStart(2,"0")}`;
+  }
 
   const [clock, setClock] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -501,6 +567,7 @@ export default function App() {
     loadHistory();
     loadPrograms();
     loadProfile();
+    loadRuns();
   }, [user]);
 
   async function loadHistory() {
@@ -724,7 +791,7 @@ export default function App() {
         </div>
 
         <div className="tabs">
-          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["oversikt","OVERSIKT"]].map(([key,label]) => (
+          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["running","LØPING"],["oversikt","OVERSIKT"]].map(([key,label]) => (
             <button key={key} className={`tab${tab===key?" active":""}`} onClick={() => setTab(key)}>{label}</button>
           ))}
         </div>
@@ -953,6 +1020,155 @@ export default function App() {
               ))}
             </>
           )}
+
+          {/* ── LØPING ── */}
+          {tab === "running" && (() => {
+            const previewPace = calcPace(parseFloat(runForm.distance), (parseInt(runForm.hours)||0)*3600 + (parseInt(runForm.minutes)||0)*60 + (parseInt(runForm.seconds)||0));
+            const totalKm = runs.reduce((s,r) => s + parseFloat(r.distance), 0);
+            const avgPace = runs.length ? calcPace(totalKm, runs.reduce((s,r) => s + r.duration, 0)) : null;
+            const bestPace = runs.length ? calcPace(1, Math.min(...runs.map(r => r.duration / r.distance))) : null;
+            const weeklyData = (() => {
+              const weeks = {};
+              runs.forEach(r => {
+                const d = new Date(r.date_key);
+                const monday = new Date(d);
+                monday.setDate(d.getDate() - ((d.getDay()+6)%7));
+                const key = monday.toISOString().slice(5,10);
+                weeks[key] = (weeks[key]||0) + parseFloat(r.distance);
+              });
+              return Object.entries(weeks).sort((a,b)=>a[0]>b[0]?1:-1).slice(-10).map(([date,km])=>({date, km: Math.round(km*10)/10}));
+            })();
+            const prDistances = [5, 10, 21.1, 42.2];
+            const prs = prDistances.map(dist => {
+              const eligible = runs.filter(r => parseFloat(r.distance) >= dist);
+              if (!eligible.length) return { dist, time: null };
+              const best = eligible.reduce((b,r) => {
+                const pace = r.duration / parseFloat(r.distance);
+                return pace < b.duration / parseFloat(b.distance) ? r : b;
+              });
+              const estSecs = Math.round(best.duration / parseFloat(best.distance) * dist);
+              return { dist, time: fmtDuration(estSecs) };
+            });
+
+            return (
+              <>
+                <div className="subnav">
+                  <button className={`subnav-btn${runSubNav==="log"?" active":""}`} onClick={() => setRunSubNav("log")}>Logg</button>
+                  <button className={`subnav-btn${runSubNav==="history"?" active":""}`} onClick={() => setRunSubNav("history")}>Historikk</button>
+                  <button className={`subnav-btn${runSubNav==="stats"?" active":""}`} onClick={() => setRunSubNav("stats")}>Statistikk</button>
+                </div>
+
+                {runSubNav === "log" && (
+                  <>
+                    <div className="section-title">NY <span>LØPETUR</span></div>
+                    <div className="run-type-grid">
+                      {["Vei","Terreng","Mølle","Intervall"].map(t => (
+                        <button key={t} className={`run-type-btn${runForm.type===t?" active":""}`} onClick={() => setRunForm(f=>({...f,type:t}))}>{t}</button>
+                      ))}
+                    </div>
+                    <div className="form-2col" style={{marginBottom:"8px"}}>
+                      <div className="field">
+                        <label>Distanse (km)</label>
+                        <input type="number" step="0.01" min="0" value={runForm.distance} onChange={e=>setRunForm(f=>({...f,distance:e.target.value}))} placeholder="5.0" />
+                      </div>
+                    </div>
+                    <div className="run-time-row">
+                      <div className="field">
+                        <label>Timer</label>
+                        <input type="number" min="0" max="9" value={runForm.hours} onChange={e=>setRunForm(f=>({...f,hours:e.target.value}))} placeholder="0" />
+                      </div>
+                      <div className="field">
+                        <label>Minutter</label>
+                        <input type="number" min="0" max="59" value={runForm.minutes} onChange={e=>setRunForm(f=>({...f,minutes:e.target.value}))} placeholder="25" />
+                      </div>
+                      <div className="field">
+                        <label>Sekunder</label>
+                        <input type="number" min="0" max="59" value={runForm.seconds} onChange={e=>setRunForm(f=>({...f,seconds:e.target.value}))} placeholder="0" />
+                      </div>
+                    </div>
+                    {previewPace && (
+                      <div className="pace-display">
+                        <div>
+                          <div className="pace-label">Tempo</div>
+                          <div className="pace-val">{previewPace}</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div className="pace-label">min/km</div>
+                          <div style={{fontFamily:"'DM Mono',monospace",fontSize:".7rem",color:"var(--muted)",marginTop:"4px"}}>{runForm.distance} km · {fmtDuration((parseInt(runForm.hours)||0)*3600+(parseInt(runForm.minutes)||0)*60+(parseInt(runForm.seconds)||0))}</div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="field" style={{marginBottom:"16px"}}>
+                      <label>Notater (valgfritt)</label>
+                      <input value={runForm.notes} onChange={e=>setRunForm(f=>({...f,notes:e.target.value}))} placeholder="Føltes bra, vind fra nord..." />
+                    </div>
+                    <div className="save-row">
+                      <button className="btn-outline" onClick={saveRun} disabled={!runForm.distance||(!runForm.minutes&&!runForm.seconds&&!runForm.hours)}>LAGRE LØPETUR</button>
+                      {runSaved && <span className="save-msg">✓ LØPETUR LAGRET</span>}
+                    </div>
+                  </>
+                )}
+
+                {runSubNav === "history" && (
+                  <>
+                    {runs.length === 0 ? <div className="empty">ingen løpeturer ennå</div> : runs.map(run => (
+                      <div key={run.id} className="run-entry">
+                        <div>
+                          <div className="run-dist">{parseFloat(run.distance).toFixed(1)}</div>
+                          <div className="run-dist-unit">km</div>
+                        </div>
+                        <div className="run-meta">
+                          <div className="run-meta-date">{run.date}</div>
+                          <div className="run-meta-detail">
+                            {fmtDuration(run.duration)} · {calcPace(parseFloat(run.distance), run.duration)} min/km · {run.type}
+                            {run.notes && ` · ${run.notes}`}
+                          </div>
+                        </div>
+                        <button className="btn-icon" onClick={() => deleteRun(run.id)}>🗑</button>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {runSubNav === "stats" && (
+                  <>
+                    <div className="run-stat-row">
+                      <div className="stat-card"><div className="stat-val">{Math.round(totalKm*10)/10}</div><div className="stat-label">Totale km</div></div>
+                      <div className="stat-card"><div className="stat-val">{runs.length}</div><div className="stat-label">Løpeturer</div></div>
+                      <div className="stat-card"><div className="stat-val">{bestPace||"–"}</div><div className="stat-label">Beste tempo</div></div>
+                    </div>
+
+                    <div className="graph-section">
+                      <div className="graph-title">Km per uke</div>
+                      {weeklyData.length > 0 ? (
+                        <div className="graph-box">
+                          <ResponsiveContainer width="100%" height={180}>
+                            <BarChart data={weeklyData}>
+                              <XAxis dataKey="date" tick={{fill:"var(--muted)",fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} />
+                              <YAxis tick={{fill:"var(--muted)",fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} width={35} />
+                              <Tooltip contentStyle={{background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",fontFamily:"DM Mono",fontSize:"0.75rem"}} formatter={v=>[`${v} km`,"Distanse"]} />
+                              <Bar dataKey="km" fill="#F97316" radius={[2,2,0,0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : <div className="graph-empty">logg løpeturer for å se ukentlig oversikt</div>}
+                    </div>
+
+                    <div className="top-list-title" style={{marginBottom:"12px"}}>Estimerte PR-tider</div>
+                    <div className="run-pr-grid">
+                      {prs.map(({dist, time}) => (
+                        <div key={dist} className="run-pr-card">
+                          <div className="run-pr-label">{dist === 21.1 ? "Halvmaraton" : dist === 42.2 ? "Maraton" : `${dist} km`}</div>
+                          <div className="run-pr-val">{time || "–"}</div>
+                          <div className="run-pr-sub">{time ? "estimert" : "ikke nok data"}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {/* ── OVERSIKT ── */}
           {tab === "oversikt" && (

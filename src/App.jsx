@@ -1224,10 +1224,18 @@ export default function App() {
 
             const prDistances = [5, 10, 21.1, 42.2];
             const prs = prDistances.map(dist => {
-              const eligible = runs.filter(r => parseFloat(r.distance) >= dist);
+              const eligible = runs.filter(r => parseFloat(r.distance) >= 1);
               if (!eligible.length) return { dist, time: null };
-              const best = eligible.reduce((b,r) => (r.duration/parseFloat(r.distance)) < (b.duration/parseFloat(b.distance)) ? r : b);
-              return { dist, time: fmtDuration(Math.round(best.duration / parseFloat(best.distance) * dist)) };
+              const best = eligible.reduce((b, r) => {
+                const d = parseFloat(r.distance);
+                const predicted = r.duration * Math.pow(dist / d, 1.06);
+                const bDist = parseFloat(b.distance);
+                const bPredicted = b.duration * Math.pow(dist / bDist, 1.06);
+                return predicted < bPredicted ? r : b;
+              });
+              const d = parseFloat(best.distance);
+              const predicted = Math.round(best.duration * Math.pow(dist / d, 1.06));
+              return { dist, time: fmtDuration(predicted) };
             });
 
             const recentRuns = runs.slice(0, 5);

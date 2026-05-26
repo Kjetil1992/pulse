@@ -177,6 +177,22 @@ const styles = `
   .load-banner-text { font-family: 'DM Mono', monospace; font-size: .7rem; color: #F97316; letter-spacing: 1px; flex: 1; }
   .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
+  /* PROFILE */
+  .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #F97316; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: #000; margin-bottom: 16px; position: relative; overflow: hidden; flex-shrink: 0; }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-avatar-upload { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; cursor: pointer; font-size: .6rem; font-family: 'DM Mono', monospace; letter-spacing: 1px; color: #fff; }
+  .profile-avatar:hover .profile-avatar-upload { opacity: 1; }
+  .profile-top { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
+  .profile-email { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .goal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .goal-btn { padding: 10px 8px; border: 1px solid var(--border); background: none; color: var(--text); font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .15s; text-align: center; }
+  .goal-btn.active { border-color: #F97316; color: #F97316; }
+  .profile-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 28px; }
+  .profile-stat { background: var(--surface2); padding: 14px 10px; text-align: center; }
+  .profile-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: #F97316; line-height: 1; }
+  .profile-stat-label { font-family: 'DM Mono', monospace; font-size: .55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
   /* SETTINGS */
   .btn-settings { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 1rem; width: 32px; height: 32px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; }
   .btn-settings:hover { border-color: #F97316; color: #F97316; }
@@ -420,11 +436,46 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Profile
+  const [profile, setProfile] = useState({ username: "", weight: "", height: "", age: "", goal: "" });
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const avatarInputRef = React.useRef(null);
+
+  async function loadProfile() {
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (data) {
+      setProfile({ username: data.username||"", weight: data.weight||"", height: data.height||"", age: data.age||"", goal: data.goal||"" });
+      if (data.avatar_url) setAvatarUrl(data.avatar_url);
+    }
+  }
+
+  async function saveProfile() {
+    await supabase.from("profiles").upsert({ id: user.id, ...profile, updated_at: new Date().toISOString() });
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2500);
+  }
+
+  async function uploadAvatar(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = data.publicUrl + "?t=" + Date.now();
+      setAvatarUrl(url);
+      await supabase.from("profiles").upsert({ id: user.id, avatar_url: url, updated_at: new Date().toISOString() });
+    }
+  }
+
   // Load data when user logs in
   useEffect(() => {
-    if (!user) { setHistory([]); setPrograms([]); return; }
+    if (!user) { setHistory([]); setPrograms([]); setProfile({ username:"", weight:"", height:"", age:"", goal:"" }); return; }
     loadHistory();
     loadPrograms();
+    loadProfile();
   }, [user]);
 
   async function loadHistory() {
@@ -638,7 +689,7 @@ export default function App() {
         </div>
 
         <div className="tabs">
-          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["history","HISTORIKK"],["pr","PR"],["stats","STATISTIKK"]].map(([key,label]) => (
+          {[["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["history","HISTORIKK"],["pr","PR"],["stats","STATISTIKK"],["profile","PROFIL"]].map(([key,label]) => (
             <button key={key} className={`tab${tab===key?" active":""}`} onClick={() => setTab(key)}>{label}</button>
           ))}
         </div>
@@ -923,6 +974,61 @@ export default function App() {
                   </div>
                 </div>
               ))}
+            </>
+          )}
+
+          {/* ── PROFIL ── */}
+          {tab === "profile" && (
+            <>
+              <div className="profile-top">
+                <div className="profile-avatar" onClick={() => avatarInputRef.current?.click()}>
+                  {avatarUrl ? <img src={avatarUrl} alt="avatar" /> : (profile.username ? profile.username[0].toUpperCase() : user.email[0].toUpperCase())}
+                  <div className="profile-avatar-upload">ENDRE</div>
+                </div>
+                <input ref={avatarInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={uploadAvatar} />
+                <div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.4rem",letterSpacing:"1px"}}>{profile.username || "Sett brukernavn"}</div>
+                  <div className="profile-email">{user.email}</div>
+                </div>
+              </div>
+
+              <div className="profile-stats">
+                <div className="profile-stat"><div className="profile-stat-val">{history.length}</div><div className="profile-stat-label">Økter</div></div>
+                <div className="profile-stat"><div className="profile-stat-val">{history.reduce((s,sess)=>s+sess.exercises.length,0)}</div><div className="profile-stat-label">Øvelser</div></div>
+                <div className="profile-stat"><div className="profile-stat-val">{programs.length}</div><div className="profile-stat-label">Program</div></div>
+              </div>
+
+              <div className="section-title" style={{fontSize:"1.2rem"}}>PERSONLIG <span>INFO</span></div>
+              <div className="profile-grid">
+                <div className="field">
+                  <label>Brukernavn</label>
+                  <input value={profile.username} onChange={e => setProfile(p => ({...p, username: e.target.value}))} placeholder="Ditt navn" />
+                </div>
+                <div className="field">
+                  <label>Alder</label>
+                  <input type="number" value={profile.age} onChange={e => setProfile(p => ({...p, age: e.target.value}))} placeholder="25" />
+                </div>
+                <div className="field">
+                  <label>Vekt (kg)</label>
+                  <input type="number" value={profile.weight} onChange={e => setProfile(p => ({...p, weight: e.target.value}))} placeholder="80" />
+                </div>
+                <div className="field">
+                  <label>Høyde (cm)</label>
+                  <input type="number" value={profile.height} onChange={e => setProfile(p => ({...p, height: e.target.value}))} placeholder="180" />
+                </div>
+              </div>
+
+              <div className="section-title" style={{fontSize:"1.2rem",marginTop:"20px"}}>TRENINGS<span>MÅL</span></div>
+              <div className="goal-grid">
+                {["Bygge muskler","Gå ned i vekt","Øke styrke","Hold formen","Kondisjon","Generell helse"].map(g => (
+                  <button key={g} className={`goal-btn${profile.goal===g?" active":""}`} onClick={() => setProfile(p => ({...p, goal: g}))}>{g}</button>
+                ))}
+              </div>
+
+              <div className="save-row">
+                <button className="btn-outline" onClick={saveProfile}>LAGRE PROFIL</button>
+                {profileSaved && <span className="save-msg">✓ PROFIL LAGRET</span>}
+              </div>
             </>
           )}
 

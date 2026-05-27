@@ -269,8 +269,27 @@ const styles = `
   .landing-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
   .landing-greeting { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
   .landing-question { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 2px; margin-bottom: 40px; text-align: center; }
-  .landing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 840px; }
-  @media (max-width: 680px) { .landing-grid { grid-template-columns: 1fr; max-width: 320px; } }
+  .landing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; width: 100%; max-width: 680px; }
+  @media (max-width: 500px) { .landing-grid { grid-template-columns: 1fr; max-width: 320px; } }
+
+  /* PLAN */
+  .plan-week { display: flex; flex-direction: column; gap: 8px; }
+  .plan-day-card { border: 1px solid var(--border); background: var(--surface); overflow: hidden; transition: border-color .15s; }
+  .plan-day-card.is-today { border-color: #F97316; }
+  .plan-day-header { display: flex; align-items: center; padding: 12px 14px; gap: 10px; cursor: pointer; user-select: none; }
+  .plan-day-header:hover { background: var(--surface2); }
+  .plan-day-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px; flex: 1; }
+  .plan-today-badge { font-family: 'DM Mono', monospace; font-size: .55rem; letter-spacing: 2px; text-transform: uppercase; background: #F97316; color: #000; padding: 2px 8px; }
+  .plan-activity-list { padding: 0 14px 4px; }
+  .plan-activity-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--surface2); font-size: .85rem; }
+  .plan-activity-row:last-child { border-bottom: none; }
+  .plan-activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .plan-activity-name { flex: 1; }
+  .plan-activity-meta { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted); }
+  .plan-add-form { padding: 12px 14px; border-top: 1px solid var(--border); background: var(--surface2); display: flex; flex-direction: column; gap: 8px; }
+  .plan-type-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .plan-type-btn { padding: 7px 4px; border: 1px solid var(--border); background: none; color: var(--text); font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .15s; text-align: center; }
+  .plan-type-btn.active { border-color: #F97316; color: #F97316; }
   .landing-card { position: relative; border: 1px solid var(--border); background: var(--surface); cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; overflow: hidden; text-align: left; }
   .landing-card:hover { border-color: #F97316; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.15); }
   .landing-card-img { width: 100%; height: 220px; object-fit: cover; display: block; transition: transform .4s ease; }
@@ -1029,6 +1048,21 @@ export default function App() {
     }
   }, []);
 
+  // Weekly plan helpers
+  function loadWeeklyPlan(uid) {
+    try {
+      const saved = localStorage.getItem(`pulse-plan-${uid}`);
+      if (saved) setWeeklyPlan(JSON.parse(saved));
+    } catch {}
+  }
+  function savePlanDay(dayIdx, newActivities) {
+    setWeeklyPlan(prev => {
+      const next = prev.map((d, i) => i === dayIdx ? {...d, activities: newActivities} : d);
+      localStorage.setItem(`pulse-plan-${user.id}`, JSON.stringify(next));
+      return next;
+    });
+  }
+
   // Load data when user logs in
   useEffect(() => {
     if (!user) { setHistory([]); setPrograms([]); setProfile({ username:"", weight:"", height:"", age:"", goals:[] }); return; }
@@ -1038,6 +1072,7 @@ export default function App() {
     loadRuns();
     loadRides();
     checkStravaConnection();
+    loadWeeklyPlan(user.id);
   }, [user]);
 
   async function loadHistory() {
@@ -1200,6 +1235,11 @@ export default function App() {
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedCalDay, setSelectedCalDay] = useState(null);
 
+  // Weekly plan (localStorage)
+  const [weeklyPlan, setWeeklyPlan] = useState(() => Array.from({length:7}, () => ({activities:[]})));
+  const [editingPlanDay, setEditingPlanDay] = useState(null);
+  const [planForm, setPlanForm] = useState({type:"styrke", programId:"", distance:"", notes:""});
+
   // Stats
   const [selectedExercise, setSelectedExercise] = useState("");
   const totalSessions = history.length;
@@ -1324,6 +1364,14 @@ export default function App() {
                 </div>
                 <div className="landing-card-bar" />
               </button>
+              <button className="landing-card" onClick={() => { setSection("plan"); setTab("plan"); }}>
+                <img className="landing-card-img" src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80" alt="Treningsplan" />
+                <div className="landing-card-info">
+                  <span className="landing-card-title">PLAN</span>
+                  <span className="landing-card-sub">Ukesplan · program · mål</span>
+                </div>
+                <div className="landing-card-bar" />
+              </button>
             </div>
           </div>
         </div>
@@ -1381,7 +1429,7 @@ export default function App() {
           <button onClick={() => setSection(null)} style={{background:"none",border:"none",cursor:"pointer",padding:0,lineHeight:1,color:"inherit"}}>
             <h1>PUL<span style={{color:ACCENT}}>SE</span></h1>
           </button>
-          <span style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",background:"var(--surface2)",border:"1px solid var(--border)",padding:"2px 8px",marginLeft:"4px"}}>{section === "løping" ? "LØPING" : section === "sykkel" ? "SYKKEL" : "STYRKE"}</span>
+          <span style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",color:"var(--muted)",letterSpacing:"2px",textTransform:"uppercase",background:"var(--surface2)",border:"1px solid var(--border)",padding:"2px 8px",marginLeft:"4px"}}>{section === "løping" ? "LØPING" : section === "sykkel" ? "SYKKEL" : section === "plan" ? "PLAN" : "STYRKE"}</span>
           <span className="header-date" style={{marginLeft:"8px"}}>{todayKey()}</span>
           <div className="header-dot" />
           <div style={{marginLeft:"12px",display:"flex",alignItems:"center",gap:"8px"}}>
@@ -1403,6 +1451,8 @@ export default function App() {
             ? [["running","LØPING"],["profile","PROFIL"]]
             : section === "sykkel"
             ? [["cycling","SYKKEL"],["profile","PROFIL"]]
+            : section === "plan"
+            ? [["plan","UKESPLAN"],["profile","PROFIL"]]
             : [["dashboard","DASHBOARD"],["log","LOGG ØKT"],["programs","PROGRAMMER"],["oversikt","OVERSIKT"],["profile","PROFIL"]]
           ).map(([key,label]) => (
             <button key={key} className={`tab${tab===key?" active":""}`} onClick={() => setTab(key)}>{label}</button>
@@ -2539,6 +2589,153 @@ export default function App() {
               )}
             </>
           )}
+          {/* ── UKESPLAN ── */}
+          {tab === "plan" && (() => {
+            const DAYS = ["Mandag","Tirsdag","Onsdag","Torsdag","Fredag","Lørdag","Søndag"];
+            const todayDow = (new Date().getDay() + 6) % 7;
+            const ACT_COLOR = { styrke:"#F97316", løping:"#3b82f6", sykkel:"#4caf50", annet:"#a855f7" };
+            const ACT_LABEL = { styrke:"Styrke", løping:"Løping", sykkel:"Sykkel", annet:"Annet" };
+
+            function addPlanActivity(dayIdx) {
+              const act = {type: planForm.type};
+              if (planForm.type === "styrke") {
+                const prog = programs.find(p => p.id === planForm.programId);
+                act.programId = planForm.programId;
+                act.programName = prog ? prog.name : planForm.notes || "Styrkeøkt";
+              } else if (planForm.type === "løping" || planForm.type === "sykkel") {
+                act.distance = planForm.distance;
+                act.notes = planForm.notes;
+              } else {
+                act.notes = planForm.notes;
+              }
+              const cur = weeklyPlan[dayIdx]?.activities || [];
+              savePlanDay(dayIdx, [...cur, act]);
+              setEditingPlanDay(null);
+              setPlanForm({type:"styrke", programId:"", distance:"", notes:""});
+            }
+
+            function removeActivity(dayIdx, actIdx) {
+              const cur = weeklyPlan[dayIdx]?.activities || [];
+              savePlanDay(dayIdx, cur.filter((_, i) => i !== actIdx));
+            }
+
+            return (
+              <>
+                <div style={{display:"flex",alignItems:"baseline",gap:"12px",marginBottom:"20px"}}>
+                  <div className="section-title">UKE<span>SPLAN</span></div>
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"var(--muted)",letterSpacing:"1px"}}>
+                    {new Date().toLocaleDateString("nb-NO",{day:"numeric",month:"long",year:"numeric"})}
+                  </div>
+                </div>
+
+                <div className="plan-week">
+                  {DAYS.map((dayName, dayIdx) => {
+                    const isToday = dayIdx === todayDow;
+                    const isEditing = editingPlanDay === dayIdx;
+                    const acts = weeklyPlan[dayIdx]?.activities || [];
+
+                    return (
+                      <div key={dayIdx} className={`plan-day-card${isToday ? " is-today" : ""}`}>
+                        {/* Day header */}
+                        <div className="plan-day-header" onClick={() => setEditingPlanDay(isEditing ? null : dayIdx)}>
+                          <div className="plan-day-name">{dayName}</div>
+                          {isToday && <div className="plan-today-badge">I DAG</div>}
+                          {acts.length === 0 && !isEditing && (
+                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",color:"var(--muted)",letterSpacing:"1px"}}>Hvile</div>
+                          )}
+                          <div style={{display:"flex",gap:"3px",marginLeft:"8px"}}>
+                            {acts.map((a,i) => <div key={i} className="cal-dot" style={{background:ACT_COLOR[a.type]||"var(--muted)"}} />)}
+                          </div>
+                          <div style={{color:"var(--muted)",fontSize:".8rem",marginLeft:"4px"}}>{isEditing?"▲":"▼"}</div>
+                        </div>
+
+                        {/* Activities */}
+                        {acts.length > 0 && (
+                          <div className="plan-activity-list">
+                            {acts.map((act, actIdx) => (
+                              <div key={actIdx} className="plan-activity-row">
+                                <div className="plan-activity-dot" style={{background:ACT_COLOR[act.type]||"var(--muted)"}} />
+                                <div className="plan-activity-name">
+                                  {act.type === "styrke" ? (act.programName || "Styrkeøkt") :
+                                   act.type === "løping" ? `Løpetur${act.distance ? ` · ${act.distance} km` : ""}` :
+                                   act.type === "sykkel" ? `Sykkeltur${act.distance ? ` · ${act.distance} km` : ""}` :
+                                   act.notes || "Aktivitet"}
+                                </div>
+                                {isToday && act.type === "styrke" && act.programId && programs.find(p => p.id === act.programId) && (
+                                  <button className="btn-load" style={{padding:"3px 10px",fontSize:".7rem"}}
+                                    onClick={() => { setSection("styrke"); loadProgram(programs.find(p => p.id === act.programId)); }}>
+                                    ▶
+                                  </button>
+                                )}
+                                {isToday && act.type === "løping" && (
+                                  <button className="btn-load" style={{padding:"3px 10px",fontSize:".7rem"}}
+                                    onClick={() => { setSection("løping"); setTab("running"); }}>▶</button>
+                                )}
+                                {isToday && act.type === "sykkel" && (
+                                  <button className="btn-load" style={{padding:"3px 10px",fontSize:".7rem"}}
+                                    onClick={() => { setSection("sykkel"); setTab("cycling"); }}>▶</button>
+                                )}
+                                <button className="btn-remove" style={{width:"22px",height:"22px"}}
+                                  onClick={() => removeActivity(dayIdx, actIdx)}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Edit / add form */}
+                        {isEditing && (
+                          <div className="plan-add-form">
+                            <div style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",letterSpacing:"2px",color:"var(--muted)",textTransform:"uppercase",marginBottom:"4px"}}>Legg til aktivitet</div>
+                            <div className="plan-type-row">
+                              {["styrke","løping","sykkel","annet"].map(t => (
+                                <button key={t} className={`plan-type-btn${planForm.type===t?" active":""}`}
+                                  onClick={() => setPlanForm(f => ({...f, type:t}))}>
+                                  {ACT_LABEL[t]}
+                                </button>
+                              ))}
+                            </div>
+
+                            {planForm.type === "styrke" && (
+                              <div className="field">
+                                <label>Program</label>
+                                <select value={planForm.programId} onChange={e => setPlanForm(f => ({...f, programId:e.target.value}))}>
+                                  <option value="">— Velg program —</option>
+                                  {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                              </div>
+                            )}
+                            {(planForm.type === "løping" || planForm.type === "sykkel") && (
+                              <div className="field">
+                                <label>Distansemål (km)</label>
+                                <input type="number" step="0.5" value={planForm.distance}
+                                  onChange={e => setPlanForm(f => ({...f, distance:e.target.value}))} placeholder="5" />
+                              </div>
+                            )}
+                            {planForm.type === "annet" && (
+                              <div className="field">
+                                <label>Beskriv aktiviteten</label>
+                                <input value={planForm.notes} onChange={e => setPlanForm(f => ({...f, notes:e.target.value}))} placeholder="f.eks. Yoga, svømming..." />
+                              </div>
+                            )}
+
+                            <div style={{display:"flex",gap:"8px"}}>
+                              <button className="btn-orange" style={{flex:1}} onClick={() => addPlanActivity(dayIdx)}>+ LEGG TIL</button>
+                              <button className="btn-ghost" onClick={() => setEditingPlanDay(null)}>avbryt</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{marginTop:"16px",fontFamily:"'DM Mono',monospace",fontSize:".6rem",color:"var(--muted)",letterSpacing:"1px"}}>
+                  Planen lagres lokalt på denne enheten. Klikk en dag for å redigere.
+                </div>
+              </>
+            );
+          })()}
+
           {/* ── PROFIL ── */}
           {tab === "profile" && (
             <>

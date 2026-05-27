@@ -1789,11 +1789,53 @@ export default function App() {
             <div className="subnav" style={{marginBottom:"24px"}}>
               <button className={`subnav-btn${runSubNav==="stats"?" active":""}`} onClick={() => setRunSubNav("stats")}>Statistikk</button>
               <button className={`subnav-btn${runSubNav==="plan"?" active":""}`} onClick={() => setRunSubNav("plan")}>Planlegg tur</button>
+              <button className={`subnav-btn${runSubNav==="skade"?" active":""}`} onClick={() => setRunSubNav("skade")}>Skadeforebygging</button>
             </div>
           )}
           {tab === "running" && runSubNav === "plan" && (
             <RouteMap sport="løping" user={user} />
           )}
+          {tab === "running" && runSubNav === "skade" && (() => {
+            const cat = PROGRAM_TEMPLATES.find(c => c.category === "SKADEFOREBYGGING – LØPING");
+            return (
+              <>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",letterSpacing:"2px",color:"var(--muted)",textTransform:"uppercase",marginBottom:"16px"}}>
+                  Programmer for å forebygge løpeskader. Start en økt for å logge den under styrke.
+                </div>
+                {(cat?.programs || []).map(tpl => {
+                  const alreadyAdded = programs.some(p => p.name === tpl.name);
+                  return (
+                    <div key={tpl.name} className="program-card" style={{marginBottom:"12px"}}>
+                      <div className="program-header">
+                        <div className="program-name">{tpl.name}</div>
+                        <div className="program-badge">{tpl.exercises.length} øvelser</div>
+                      </div>
+                      <div className="program-body">
+                        {tpl.exercises.map((ex, i) => (
+                          <div key={i} className="prog-ex-row">
+                            <div className="prog-ex-name">{ex.name}</div>
+                            <div className="prog-ex-detail">{ex.sets}×{ex.reps}{ex.name==="Planke"||ex.name==="Sidplanke"?"s":""}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="program-footer" style={{gap:"10px"}}>
+                        <button className="btn-load" onClick={() => { setSection("styrke"); loadProgram(tpl); }}>▶ START ØKT</button>
+                        {alreadyAdded ? (
+                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"#4caf50",letterSpacing:"1px"}}>✓ I Mine programmer</span>
+                        ) : (
+                          <button className="btn-ghost" style={{fontSize:".75rem",padding:"9px 14px"}} onClick={async () => {
+                            const exs = tpl.exercises.map(e => ({...e, id: Date.now() + Math.random()}));
+                            const { data } = await supabase.from("programs").insert({ user_id: user.id, name: tpl.name, exercises: exs }).select().single();
+                            if (data) setPrograms(prev => [data, ...prev]);
+                          }}>+ Legg til</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
           {tab === "running" && runSubNav === "stats" && (() => {
             const totalKm = runs.reduce((s,r) => s + parseFloat(r.distance), 0);
             const totalDuration = runs.reduce((s,r) => s + r.duration, 0);
@@ -1977,11 +2019,53 @@ export default function App() {
             <div className="subnav" style={{marginBottom:"24px"}}>
               <button className={`subnav-btn${cycleSubNav==="stats"?" active":""}`} onClick={() => setCycleSubNav("stats")}>Statistikk</button>
               <button className={`subnav-btn${cycleSubNav==="plan"?" active":""}`} onClick={() => setCycleSubNav("plan")}>Planlegg tur</button>
+              <button className={`subnav-btn${cycleSubNav==="skade"?" active":""}`} onClick={() => setCycleSubNav("skade")}>Skadeforebygging</button>
             </div>
           )}
           {tab === "cycling" && cycleSubNav === "plan" && (
             <RouteMap sport="sykkel" user={user} />
           )}
+          {tab === "cycling" && cycleSubNav === "skade" && (() => {
+            const cat = PROGRAM_TEMPLATES.find(c => c.category === "SKADEFOREBYGGING – SYKKEL");
+            return (
+              <>
+                <div style={{fontFamily:"'DM Mono',monospace",fontSize:".6rem",letterSpacing:"2px",color:"var(--muted)",textTransform:"uppercase",marginBottom:"16px"}}>
+                  Programmer for å forebygge sykkelskader. Start en økt for å logge den under styrke.
+                </div>
+                {(cat?.programs || []).map(tpl => {
+                  const alreadyAdded = programs.some(p => p.name === tpl.name);
+                  return (
+                    <div key={tpl.name} className="program-card" style={{marginBottom:"12px"}}>
+                      <div className="program-header">
+                        <div className="program-name">{tpl.name}</div>
+                        <div className="program-badge">{tpl.exercises.length} øvelser</div>
+                      </div>
+                      <div className="program-body">
+                        {tpl.exercises.map((ex, i) => (
+                          <div key={i} className="prog-ex-row">
+                            <div className="prog-ex-name">{ex.name}</div>
+                            <div className="prog-ex-detail">{ex.sets}×{ex.reps}{ex.name==="Planke"||ex.name==="Sidplanke"?"s":""}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="program-footer" style={{gap:"10px"}}>
+                        <button className="btn-load" onClick={() => { setSection("styrke"); loadProgram(tpl); }}>▶ START ØKT</button>
+                        {alreadyAdded ? (
+                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"#4caf50",letterSpacing:"1px"}}>✓ I Mine programmer</span>
+                        ) : (
+                          <button className="btn-ghost" style={{fontSize:".75rem",padding:"9px 14px"}} onClick={async () => {
+                            const exs = tpl.exercises.map(e => ({...e, id: Date.now() + Math.random()}));
+                            const { data } = await supabase.from("programs").insert({ user_id: user.id, name: tpl.name, exercises: exs }).select().single();
+                            if (data) setPrograms(prev => [data, ...prev]);
+                          }}>+ Legg til</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
           {tab === "cycling" && cycleSubNav === "stats" && (() => {
             const totalKm = rides.reduce((s,r) => s + parseFloat(r.distance), 0);
             const totalDuration = rides.reduce((s,r) => s + r.duration, 0);

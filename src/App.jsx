@@ -354,6 +354,26 @@ const styles = `
   .cal-activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .cal-legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
   .cal-legend-item { display: flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+  /* EXERCISE DEMO MODAL */
+  .demo-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s ease; }
+  .demo-modal { background: var(--surface); border: 1px solid var(--border); max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; animation: slideIn .2s ease; position: relative; }
+  .demo-modal-header { display: flex; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--border); gap: 10px; background: var(--surface2); }
+  .demo-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 2px; flex: 1; line-height: 1.2; }
+  .demo-modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 4px 6px; transition: color .15s; flex-shrink: 0; }
+  .demo-modal-close:hover { color: #e53e3e; }
+  .demo-muscles { display: flex; flex-wrap: wrap; gap: 5px; padding: 14px 18px 6px; }
+  .demo-muscle-tag { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: 1px; text-transform: uppercase; border: 1px solid #F97316; color: #F97316; padding: 2px 8px; }
+  .demo-tips { padding: 10px 18px 14px; }
+  .demo-tip { font-size: .85rem; line-height: 1.55; padding: 8px 0; border-bottom: 1px solid var(--surface2); display: flex; gap: 10px; align-items: flex-start; }
+  .demo-tip:last-child { border-bottom: none; }
+  .demo-tip-num { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: #F97316; flex-shrink: 0; line-height: 1.3; width: 16px; }
+  .demo-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); }
+  .btn-yt { background: #FF0000; border: none; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1.5px; padding: 11px 18px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center; transition: opacity .15s; }
+  .btn-yt:hover { opacity: .85; }
+  .demo-info-btn { background: none; border: 1px solid var(--border2); color: var(--muted2); font-family: 'DM Mono', monospace; font-size: .55rem; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; cursor: pointer; transition: all .15s; flex-shrink: 0; line-height: 1.6; }
+  .demo-info-btn:hover { border-color: #F97316; color: #F97316; }
+  .demo-no-info { font-family: 'DM Mono', monospace; font-size: .75rem; color: var(--muted); padding: 16px 18px; }
 `;
 
 const PROGRAM_TEMPLATES = [
@@ -548,6 +568,159 @@ const EXERCISES_BY_GROUP = {
     "Farmers walk","Sandbag carry","Box jumps","Wall ball",
     "Sled push","Bear crawl","Man maker","Snatch","Clean","Jerk",
   ],
+};
+
+const EXERCISE_INFO = {
+  // BRYST
+  "Benkpress": { muscles:["Bryst","Skulder","Triceps"], tips:["Trekk skuldrene ned og bakover mot benken – hold dem der hele løftet","Grip litt bredere enn skulderbredde, håndleddene rett over albuene","Senk stangen kontrollert til nedre bryst med ~75° albuevinkel","Press eksplosivt opp og litt bakover mot rack"] },
+  "Skråbenkpress (opp)": { muscles:["Øvre bryst","Skulder","Triceps"], tips:["Sett benken på ca. 30–45 graders vinkel","Press opp og inn – stangbanen er litt buet, ikke rett opp","Hold skuldrene trykket ned mot benken gjennom hele bevegelsen","Stangen lander ved øvre bryst/krageben-området i bunnen"] },
+  "Skråbenkpress (ned)": { muscles:["Nedre bryst","Triceps"], tips:["Benken vippes ned 15–30 grader – bruk ankelfeste","Fokuser på å presse stangen mot føttene, ikke rett opp","Nedre bryst aktiveres sterkest i denne vinkelen","Vær forsiktig med nakken – varm opp godt"] },
+  "Hantelbenkpress": { muscles:["Bryst","Skulder","Triceps"], tips:["Start med hantler på lårene og 'kast' dem opp ved å sette deg ned","Senk hantlene litt under benk-nivå for økt bevegelsesbane","Trykk hantlene mot hverandre i toppen for ekstra kontraksjon","Kontrollert senking – minst 2 sekunder ned"] },
+  "Hantelbenkpress (skrå opp)": { muscles:["Øvre bryst","Skulder"], tips:["Benk på 30–45 grader","Press opp og inn mot hverandre","Full strekk i bunnen for økt aktivering","Kontrollert tempo ned"] },
+  "Hantelbenkpress (skrå ned)": { muscles:["Nedre bryst","Triceps"], tips:["Benk på -15 til -30 grader","Press opp og inn","Nedre bryst aktiveres godt","Ha partner tilgjengelig ved behov"] },
+  "Hantelflyes": { muscles:["Bryst (isolasjon)"], tips:["Hold albuene lett bøyd – ikke rette armer","Senk hantlene ut til siden i stor bue – som å 'klemme et tre'","Stopp når hantlene er i linje med skuldrene","Klem brystmusklene kraftig i toppen"] },
+  "Kabelflyes": { muscles:["Bryst (isolasjon)","Skulder"], tips:["Still kablene i ønsket høyde – mid, høy, eller lav","Lirk grepene frem og inn i en buende bane","Hold lett bøy i albuene hele veien","Fokuser på å 'klemme' brystet – ikke presse med armer"] },
+  "Kabelflyes (opp)": { muscles:["Nedre bryst"], tips:["Kablene stilles høyt, press ned og inn","God strekk i startposisjon","Klem nedre bryst i møtepunktet","Hold lett albuebøy"] },
+  "Kabelflyes (ned)": { muscles:["Øvre bryst"], tips:["Kablene stilles lavt, press opp og inn","God aktivering av øvre bryst","Møt hendene over brystet","Kontrollert retur"] },
+  "Kabelkryss": { muscles:["Bryst","Skulder"], tips:["Krysslir hendene forbi hverandre i midten","Variér høyde for ulike deler av brystet","Stabilt kjerne-arbeid","Klem hardt i kryssingspunktet"] },
+  "Pec deck": { muscles:["Bryst (isolasjon)"], tips:["Sett setet slik at armene er parallelle med gulvet","Klem brystmusklene i møtepunktet","Kontrollert retur – ikke la vekten 'slippe'","Hold lett bøy i albuene"] },
+  "Dips (bryst)": { muscles:["Nedre bryst","Triceps","Skulder"], tips:["Len torsen fremover (ca. 30°) for mer brystaktivering","Senk til albuene er ~90° eller litt under","Hold albuene litt utover fra kroppen","Legg til belastning med belte/vest når det blir for lett"] },
+  "Push-up": { muscles:["Bryst","Skulder","Triceps","Kjerne"], tips:["Rettlinjet kropp fra hode til hæl – aktiver kjernen","Hendene litt bredere enn skulderbredde","Senk til brystet nesten rører gulvet","Press raskt opp – kontrollert ned"] },
+  "Push-up (smal)": { muscles:["Triceps","Bryst"], tips:["Hendene tett inn under skuldrene","Albuene presser inn mot kroppen","God kjerne-aktivering hele veien","Mer fokus på triceps enn vanlig push-up"] },
+  "Smith machine benkpress": { muscles:["Bryst","Skulder","Triceps"], tips:["Stangen er fikset i bane – litt annerledes balanse enn fri stang","Still benken for optimal bevegelse","Skuldrene ned og bakover","Kan gi god isolasjon av brystet"] },
+  "Gulvpress": { muscles:["Bryst","Triceps"], tips:["Lig på gulvet med bøyde knær","Albuene treffer gulvet i bunnen – naturlig stopp","God for å trene overarmen uten skulderbelastning","Press eksplosivt opp"] },
+  // RYGG
+  "Markløft": { muscles:["Rygg","Hamstrings","Glutes","Trapezius"], tips:["Stangen over midtfoten, skulderblad over stangen, hofter lavere enn skuldre","Skrap stangen langs leggene hele veien opp","Push gulvet vekk – ikke 'pull' stangen opp","Lås hofte og knær ut simultant"] },
+  "Sumo markløft": { muscles:["Glutes","Indre lår","Rygg"], tips:["Bred stilling – tær peker godt utover","Grep innenfor bena","Knærne ut i linje med tærne","Hofter ned og bryst opp ved start"] },
+  "Rack pull": { muscles:["Øvre rygg","Trapezius"], tips:["Stangen settes i rack på knehøyde eller høyere","Fokus på øvre rygg og trapezius","God for å overloade øvre rygg","Hold stangen nær kroppen"] },
+  "Stiff-leg markløft": { muscles:["Hamstrings","Nedre rygg"], tips:["Bena nesten rette – lett bøy i knærne","Beveg deg ned ved å skyve hofter bakover","Hold ryggen flat, ikke rund","Kjenn strekk i baksiden av lårene"] },
+  "Chins": { muscles:["Lat (rygg)","Biceps"], tips:["Underhåndsgrep, litt smalere enn skulder","Trekk albuene ned og inn mot hofter","Kom helt opp til haken over stangen","Kontrollert senking – ca. 2–3 sekunder"] },
+  "Pull-ups": { muscles:["Lat (rygg)","Skulder"], tips:["Overhåndsgrep, skulderbredde eller litt bredere","Aktiver skulderblad før du starter trekket","Trekk albuene ned mot hofter","Unngå sving – kontrollert bevegelse"] },
+  "Lat-pulldown": { muscles:["Lat (rygg)","Biceps"], tips:["Grip stangen litt bredere enn skulder, overhåndsgrep","Lirk stangen ned til øvre bryst – ikke bakhodet","Trekk albuene ned og inn mot hofter","Kontrollert retur – strekk lat-ene i toppen"] },
+  "Lat-pulldown (nøytralt grep)": { muscles:["Lat (rygg)","Biceps"], tips:["Nøytralgrep er skånsomt for skuldre","Godt valg for nybegynnere","Trekk albuene ned og bakover","Full strekk i toppen"] },
+  "Sittende roing": { muscles:["Midtre rygg","Rhomboids","Biceps"], tips:["Rett rygg, lett fremover-lene i startposisjon","Trekk håndtaket mot navlen/nedre mage","Klem skulderblad sammen i slutten","Kontrollert retur med god strekk i ryggen"] },
+  "Sittende kabeltrekk": { muscles:["Rygg","Biceps"], tips:["Rett rygg","Trekk mot nedre mage","Klem skulderblad","Kontrollert tilbake"] },
+  "T-bar roing": { muscles:["Midtre rygg","Lat"], tips:["Hofter bøyd, ryggen flat","Trekk stangen mot brystet","Klem skulderblad i toppen","Ikke bruk sving/momentum"] },
+  "Stående roing": { muscles:["Rygg","Biceps"], tips:["Forover-bøyd med flat rygg","Trekk stangen mot navlen","Albuer presser bakover","Hold ryggen flat – ikke rund"] },
+  "Ettarms hantelroing": { muscles:["Lat","Midtre rygg"], tips:["En hånd og ett kne på benken for støtte","Heng hantelen rett ned, skulder avslappet","Trekk albuen rett opp mot taket","Hold hofta og ryggen flat"] },
+  "Ettarms kabeltrekk": { muscles:["Lat","Rygg"], tips:["En arm av gangen gir god isolasjon","Trekk albuen ned og bakover","Roter lett i skulderen","Full bevegelsesbane"] },
+  "Hyperextensions": { muscles:["Nedre rygg","Glutes","Hamstrings"], tips:["Hofter over puten – ikke navlen","Senk overkroppen ned til 90°","Løft opp til kroppen er rett","Ikke overekstender – stopp ved rett linje"] },
+  "Omvendte flyes": { muscles:["Bakre skulder","Øvre rygg"], tips:["Forover-bøyd, lett bøy i albuene","Løft armene ut til siden i bue","Klem skulderblad i toppen","Hold vektene lette – dette er isolasjon"] },
+  "Face pulls": { muscles:["Bakre skulder","Rotatormansjett"], tips:["Kabelen i ansiktshøyde eller litt over","Trekk mot ansiktet med albuene høyt","Ekstern rotasjon i skulderen – hender bak ørene","Klem bakre skulder"] },
+  "Supermann": { muscles:["Nedre rygg","Glutes"], tips:["Lig på magen med armene fremover","Løft armer og bein simultant","Hold 2 sekunder i toppen","Kontrollert ned"] },
+  "Rygghev": { muscles:["Nedre rygg","Glutes"], tips:["Lig på magen, hender ved ørene","Løft overkroppen opp","Hold ryggen rett, ikke overekstender","God for å styrke nedre rygg"] },
+  // SKULDRE
+  "Militærpress": { muscles:["Skulder","Triceps","Trapezius"], tips:["Stang ved øvre bryst, grep litt bredere enn skulder","Press rett opp og la hodet 'gå gjennom vinduet'","Stram kjernen og glutes for å beskytte ryggen","Kontrollert senking til bryst-nivå"] },
+  "Push press": { muscles:["Skulder","Triceps","Bein (start)"], tips:["Lett knedip og eksplosiv overgang","Bruk benbevegelsen til å akselerere stangen","Press armer helt ut i toppen","God for å lære vektløftingsbevegelser"] },
+  "Hantelpress (sittende)": { muscles:["Skulder","Triceps"], tips:["Ryggstøtte på benken, hantler ved ørene","Albuene 90° ved start","Press opp og inn – hantler møtes nesten i toppen","Kontrollert ned"] },
+  "Arnold press": { muscles:["Skulder (alle hoder)","Triceps"], tips:["Start med hantler foran (som biceps curl-topp)","Roter utover mens du presser opp","Treffer alle tre skulder-hoder","Kontrollert – fokuser på rotasjonen"] },
+  "Landmine press": { muscles:["Skulder","Bryst","Triceps"], tips:["Stangen i landmine-krok eller hjørne","Stå i split-stilling for balanse","Press opp og inn i en buende bane","Godt skuldervennlig alternativ"] },
+  "Sidehev": { muscles:["Midtre skulder"], tips:["Lett bøy i albuene, hantler hengende ved sida","Løft ut til siden til armene er parallelle med gulvet","Hold thumbs-up eller lett ned for mer midtre skulder","Ikke bruk sving – kontrollert og isolert"] },
+  "Kabel sidehev": { muscles:["Midtre skulder"], tips:["Kabelen stilles lavt på siden","Trekk armen ut og opp til skulder-høyde","Konstant spenning fra kabelen","Vær litt forover for bedre vinkel"] },
+  "Frontløft": { muscles:["Fremre skulder"], tips:["Løft armene rett frem til skulder-høyde","Ikke sving – kontrollert","Kan gjøres med stang, hantler eller kabel","Fremre skulder er ofte allerede godt trent"] },
+  "Upright row": { muscles:["Skulder","Trapezius"], tips:["Smalt grep, trekk stangen opp langs magen","Albuene peker utover og opp","Stopp når stangen er ved bryst/hake","Bredt grep = mer skulder, smalt = mer trapezius"] },
+  "Bakover flyes": { muscles:["Bakre skulder","Rhomboids"], tips:["Forover-bøyd, ryggen flat","Løft armene ut og bakover","Klem skulderblad i toppen","Hold vektene kontrollert"] },
+  "Kabel bakover flyes": { muscles:["Bakre skulder"], tips:["Kabel i ansiktshøyde, én arm av gangen","Trekk bakover og ut","God konstant spenning","Kontrollert retur"] },
+  "Shrugs": { muscles:["Trapezius"], tips:["Hold stangen/hantlene foran deg","Løft skuldrene rett opp mot ørene","Hold 1 sekund i toppen","Ikke rull skuldrene – rett opp og ned"] },
+  "Hanteltrekk": { muscles:["Trapezius","Skulder"], tips:["Hantler ved siden av kroppen","Trekk skuldrene opp","Kontrollert bevegelse","Hold stram kjerne"] },
+  // BICEPS
+  "Stangcurl": { muscles:["Biceps","Brachialis"], tips:["Albuene inn til kroppen – hold dem der hele veien","Curl stangen opp med kontrollert tempo","Klem biceps i toppen","Senk kontrollert – ca. 2–3 sekunder ned"] },
+  "EZ-bar curl": { muscles:["Biceps","Brachialis"], tips:["EZ-bar er skånsomt for håndledd","Samme teknikk som stangcurl","Litt mer brachialis-aktivering","Populær for folk med håndleddsproblemer"] },
+  "Hantelcurl": { muscles:["Biceps"], tips:["Supiner (vri) håndleddet oppover ved curling","Alternér armer eller gjør begge simultant","Fullt bevegelsesutslag","Klem biceps i toppen"] },
+  "Hammercurl": { muscles:["Brachialis","Biceps"], tips:["Nøytralgrep (tommel opp) hele veien","Treffer brachialis mer enn standard curl","Kan gjøres alternert eller simultant","God for økt armomkrets"] },
+  "Konsentrasjonskurl": { muscles:["Biceps (topp)"], tips:["Sett deg, albue mot innsiden av låret","Curl fullt opp og klem hardt i toppen","Isolerer biceps godt","Hold kroppen helt stille"] },
+  "Kabelbicepscurl": { muscles:["Biceps"], tips:["Konstant spenning fra kabelen","Curl opp og hold 1 sekund","God for å trene biceps gjennom hele banen","Rett stang eller EZ-bar vedlegg"] },
+  "Predikerstolcurl": { muscles:["Nedre biceps"], tips:["Overarmen hviler på puten","God isolasjon – kan ikke 'jukse'","Klem i toppen","Lavt rep-range er gunstig"] },
+  "Incline hantelcurl": { muscles:["Biceps (lang hode)"], tips:["Ligg på skrå benk med armene hengende ned","Lengre bevegelsesbane enn standard curl","Treffer lang-hodet av biceps bedre","Bruk lett vekt"] },
+  "Spider curl": { muscles:["Biceps"], tips:["Lig mot skrå benk med armer hengende ned","Isolert curl – ikke mulig å sving","God for topp-kontraksjon","Kontrollert ned"] },
+  "Reverse curl": { muscles:["Brachioradialis","Biceps"], tips:["Overhåndsgrep (pronert)","Treffer brachioradialis og underarm","Brukes for balansert armutvikling","Lett vekt til å begynne med"] },
+  "Zottman curl": { muscles:["Biceps","Brachioradialis"], tips:["Curl opp med underhånd","Roter til overhånd i toppen","Senk ned med overhånd","Treffer biceps opp og underarm ned"] },
+  "Barbell 21s": { muscles:["Biceps"], tips:["7 reps nedre halvdel, 7 reps øvre halvdel, 7 reps full ROM","Intenst – bruk lett vekt","Treffer biceps gjennom hele banen","Bra som finisher-øvelse"] },
+  // TRICEPS
+  "Triceps pushdown": { muscles:["Triceps"], tips:["Albuene inn til kroppen – hold dem der","Press kabelen ned til full strekk i albuen","Klem triceps i bunnen","Kontrollert tilbake til 90°"] },
+  "Rope pushdown": { muscles:["Triceps (ytre)"], tips:["Taukabel gir ekstra rotasjon i bunnen","Spre enden av tauet ut i bunnen","God aktivering av ytre triceps-hode","Hold albuene inn"] },
+  "Ettarms pushdown": { muscles:["Triceps"], tips:["Én arm gir bedre isolasjon","Albuen inn til kroppen","Press ned og hold","Bytt side jevnlig"] },
+  "Reverse pushdown": { muscles:["Triceps (overside)","Underarm"], tips:["Overhåndsgrep","Press ned til full strekk","Treffer øvre del av triceps og underarm","Bruk lett vekt"] },
+  "Skull crushers": { muscles:["Triceps (lang hode)"], tips:["Lig flat på benken, stang over brystet","Senk stangen mot pannen – albuene peker opp","Press opp til full strekk","Hold albuene stille – ikke la dem spre seg"] },
+  "JM press": { muscles:["Triceps"], tips:["Hybrid mellom skull crusher og close grip press","Press opp fra bryst-nivå med smalt grep","Albuene litt utover ved start","Tungt compound tricepsarbeid"] },
+  "Close grip benkpress": { muscles:["Triceps","Bryst (indre)"], tips:["Grep litt smalere enn skulderbredde – ikke for smalt","Senk til nedre bryst, albuene inn","Press opp med fokus på triceps","Bra compound-bevegelse for armstyrke"] },
+  "Overhead tricepsext.": { muscles:["Triceps (lang hode)"], tips:["Arm(er) rett opp over hodet","Bøy i albuen og senk vekten bak hodet","Press opp til full strekk","Lang-hodet er fullt strekt i denne stillingen"] },
+  "Kabel overhead ext.": { muscles:["Triceps (lang hode)"], tips:["Kabel fra lav posisjon, stå fremover-lent","Strekk armene over hodet","Konstant spenning fra kabelen","God for lang-hodet av triceps"] },
+  "Triceps dips": { muscles:["Triceps","Skulder"], tips:["Hendene bak deg på en benk","Kroppen loddrett, albuer peker bakover","Senk til albuene er ~90°","Press opp til full strekk"] },
+  "Kickbacks": { muscles:["Triceps"], tips:["Forover-bøyd med overarmen parallell med gulvet","Press hantelen bakover til full strekk","Hold overarmen helt stille","Isolert bevegelse – bruk lite vekt"] },
+  // BEIN
+  "Knebøy": { muscles:["Quadriceps","Glutes","Hamstrings"], tips:["Skulderbredde stilling, tær litt utover","Bryst opp, rygg flat – knærne i linje med tærne","Gå ned til hoftene er parallelle med knærne (eller lavere)","Press gjennom hele foten og stå opp eksplosivt"] },
+  "Frontknebøy": { muscles:["Quadriceps","Kjerne"], tips:["Stangen hviler på skuldrene foran (ikke bak)","Albuene høyt, ryggen mer oppreist enn back squat","Mer quad-fokus, mindre ryggspenning","Krevende – bygg opp gradvis"] },
+  "Sumo knebøy": { muscles:["Indre lår","Glutes","Quads"], tips:["Bred stilling, tær peker godt utover","Senk deg mellom bena","Knærne presser utover i linje med tærne","God for folk med bred hofte"] },
+  "Goblet squat": { muscles:["Quadriceps","Glutes","Kjerne"], tips:["Hold kettlebell/hantel mot brystet","Bruk hendene til å presse knærne utover","Rett rygg, bryst opp","Godt læringsverktøy for knebøy-teknikk"] },
+  "Hack squat": { muscles:["Quadriceps"], tips:["Føttene foran kroppen på platen","Kontrollert ned – ikke for fort","Press gjennom hælen for mer glute, tær for mer quad","God isolasjon av quad"] },
+  "Beinpress": { muscles:["Quadriceps","Glutes"], tips:["Hoftebredde stilling på platen","Senk kontrollert til 90° i kneleddet","Press gjennom hele foten – ikke bare tærne","Ikke lås ut knærne helt i toppen"] },
+  "Smal beinpress": { muscles:["Ytre quad"], tips:["Smal fotplassering","Mer aktivering av ytre quad","Knærne presser innover – vær forsiktig","God variasjon"] },
+  "Leg extension": { muscles:["Quadriceps (isolasjon)"], tips:["Juster setet slik at kneet er i linje med maskinens aksel","Strekk beina til full strekk – klem quad i toppen","Hold 1 sekund i toppen","Kontrollert ned – ikke la vekten slippe"] },
+  "Leg curl": { muscles:["Hamstrings (isolasjon)"], tips:["Liggende – juster puten mot nedre legg","Curl hælen mot rompa","Hold 1 sekund i toppen","Kontrollert ned – full strekk i bunnen"] },
+  "Seated leg curl": { muscles:["Hamstrings"], tips:["Sittende versjon treffer nedre del av hamstrings bedre","Full bevegelsesrekkevidde","Klem i bunnen","Kontrollert retur"] },
+  "Utfall": { muscles:["Quadriceps","Glutes","Hamstrings"], tips:["Ta et langt skritt fremover","Bakre kne senkes mot gulvet – nær ikke gulvet","Fremre kne i linje med tærne, ikke forbi dem","Push av med fremre hæl og stå opp"] },
+  "Bulgarske utfall": { muscles:["Quads","Glutes"], tips:["Bakre fot plasseres på en benk","Stor utfall-lengde gir mer glute, kort gir mer quad","Knærne i linje med tærne","Krevende balanse – start uten vekt"] },
+  "Steg-ups": { muscles:["Quads","Glutes"], tips:["Steg opp på kasse/benk med én fot","Press gjennom hælen","Ikke hjelp med bakre benet","Kontrollert ned"] },
+  "Pistol squat": { muscles:["Quad","Glutes","Balanse"], tips:["Enbens knebøy – avansert","Start med hjelp (TRX eller holde i noe)","Fullt bevegelsesutslag er målet","Krever god ankelmobilitet"] },
+  "Rumensk markløft": { muscles:["Hamstrings","Glutes"], tips:["Bena nesten rette med lett knebøy","Skyv hofter bakover mens du senker stangen langs lårene","Kjenn strekk i hamstrings – stopp der","Press hofter frem og stå opp"] },
+  "Enbens markløft": { muscles:["Hamstrings","Glutes","Balanse"], tips:["Stå på ett ben, lirk forover mens bakbenet strekkes bakover","Hold ryggen flat","Kom tilbake ved å presse fremre hæl ned","God for balanse og ensidig styrke"] },
+  "Nordic curl": { muscles:["Hamstrings"], tips:["Fest anklene – partner eller under benk","Senk deg kontrollert ned til gulvet (bruk hender som landing)","Curl deg opp igjen – eller start med assistanse","Svært krevende – bygg opp gradvis"] },
+  "Glute-ham raise": { muscles:["Hamstrings","Glutes"], tips:["GHD-maskin trengs","Bevegelsen aktiverer både glute og hamstring","God kombinasjon av to store muskelgrupper","Avansert øvelse"] },
+  "Hip thrust": { muscles:["Glutes","Hamstrings"], tips:["Skuldrene hviler mot benken, stangen over hofter (med pute)","Trykk gjennom hælen og løft hoftene til kroppen er rett","Klem glutes hardt i toppen","Hold 1 sekund i toppen"] },
+  "Glute bridge": { muscles:["Glutes"], tips:["Lig på ryggen med knær bøyd","Press hoftene opp og klem glutes","Tilsvarer hip thrust men på gulvet","Bra oppvarming eller lettere variant"] },
+  "Kickbacks (kabel)": { muscles:["Glutes"], tips:["Kabel rundt ankelen","Spark bakover og opp – ett ben av gangen","Hold ryggen rett","Klem glutes i toppen"] },
+  "Abduktor": { muscles:["Abduktorer (ytre lår)"], tips:["Maskin der du presser knærne ut","Kontrollert ut og inn","God for hoftest-stabilitet","Vanlig sluttøvelse"] },
+  "Adduktor": { muscles:["Adduktorer (indre lår)"], tips:["Maskin der du klemmer knærne inn","Kontrollert bevegelse","God for indre lår","Vanlig sluttøvelse"] },
+  "Kalvehev": { muscles:["Legg (gastrocnemius)"], tips:["Tær på kant – full strekk i bunnen","Press opp til tå og hold 1 sekund","Høyt rep-antall fungerer bra (15–25)","Kan gjøres stående, sittende eller i maskin"] },
+  "Seated kalvehev": { muscles:["Legg (soleus)"], tips:["Sittende versjon treffer soleus mer enn stående","Full bevegelse opp og ned","Rolig tempo","God supplement til stående kalvehev"] },
+  // MAGE
+  "Crunch": { muscles:["Mage (øvre)"], tips:["Lig på ryggen med knær bøyd","Løft kun skuldrene – ikke hele ryggen","Klem magen i toppen","Ikke trekk nakken"] },
+  "Crunch (kabel)": { muscles:["Mage"], tips:["Kabel fra høy posisjon, knel på gulvet","Bøy deg ned mot knærne","God konstant spenning","Kan legge til mye vekt"] },
+  "Situps": { muscles:["Mage","Hip flexors"], tips:["Full bevegelse – skuldrene helt ned i bunnen","Rask opp, kontrollert ned","Aktiverer hip flexors mer enn crunch","Ankelfeste kan brukes"] },
+  "Reverse crunch": { muscles:["Nedre mage"], tips:["Lig på ryggen – løft beina mot brystet","Rull bekkenet opp og inn","Klem nedre mage","Kontrollert ned"] },
+  "V-ups": { muscles:["Mage (hele)"], tips:["Armene og beina møtes i midten samtidig","Full strekk i bunnen","Krevende – bygg opp gradvis","Rask og eksplosiv bevegelse"] },
+  "Planke": { muscles:["Kjerne","Skuldre","Glutes"], tips:["Rett linje fra hode til hæl","Aktiver magen, glutes og quads","Ikke la hofter synke eller stige","Pust rolig og hold stillingen"] },
+  "Sidplanke": { muscles:["Obliques","Kjerne"], tips:["Rett linje fra hode til fot","Hofter presser mot taket","Ikke la hofter synke","Varier med løft av ben/arm"] },
+  "Hul kropp (hollow body)": { muscles:["Kjerne"], tips:["Lig på ryggen, armene over hodet","Løft ben og skuldre slik at ryggen er flat","Pust ut og hold magen inntrukket","Basis for gymnast-kjernestyrke"] },
+  "L-sit": { muscles:["Kjerne","Hip flexors","Triceps"], tips:["Sett på paralletter med armene rette, beina rett frem","Hold stillingen","Svært krevende – bygg opp fra bøyde knær","Godt for kjerne og armstyrke"] },
+  "Beinheving": { muscles:["Nedre mage","Hip flexors"], tips:["Heng i pullup-stang eller lig på rygg","Løft beina rett opp til 90°","Kontrollert ned","Ikke sving"] },
+  "Toes to bar": { muscles:["Mage","Hip flexors"], tips:["Heng i stang, ta tærne opp til stangen","Kontrollert og ingen sving","Krevende – bygg opp fra knær til bryst","God for hele kjernen"] },
+  "Hanging knee raise": { muscles:["Nedre mage"], tips:["Heng i stang, trekk knærne mot brystet","Enklere enn toes to bar","Kontrollert ned","God startøvelse for henge-magearbeid"] },
+  "Russian twist": { muscles:["Obliques"], tips:["Sitt med bøyde knær, helde bakover","Roter overkroppen side til side","Legg til medisinball for mer motstand","Pust ut ved rotasjon"] },
+  "Ab wheel": { muscles:["Kjerne (hel)"], tips:["Knel på gulvet, hjulet rett frem","Rull ut med rett rygg – til hofter nær gulvet","Trekk tilbake ved hjelp av magen – ikke armene","Start med kort rekkevidde og bygg opp"] },
+  "Dragon flag": { muscles:["Kjerne (hel)"], tips:["Avansert – krever mye mage og ryggstyrke","Lig på benk, hold over hodet","Løft kroppen rett opp og senk kontrollert","Bygg opp med bøyde knær"] },
+  "Pallof press": { muscles:["Kjerne (anti-rotasjon)"], tips:["Kabel til siden, press rett frem og trekk inn igjen","Kjernen jobber for å hindre rotasjon","Rolig tempo","God for funksjonell kjernestyrke"] },
+  "Bird dog": { muscles:["Kjerne","Rygg"], tips:["Firefotstilling","Strekk motstående arm og ben simultant","Hold ryggen flat – ikke sving","God for rygg-rehabilitering"] },
+  "Deadbug": { muscles:["Kjerne"], tips:["Lig på ryggen, armer og ben opp","Senk motstående arm og ben mot gulvet","Hold ryggen presset mot gulvet","Pust ut og trekk navel inn"] },
+  "McGill curl-up": { muscles:["Kjerne"], tips:["Ett kne bøyd, ett ben rett","Løft hodet og skuldrene lett opp","Hold ryggen nøytral, ikke flat","Dr. Stuart McGills anbefalte crunch-variant"] },
+  // KONDISJON
+  "Løping": { muscles:["Bein","Hjerte/lunge"], tips:["Lett landfall under hoften","Avslappet overkropp – ikke spent","Pust rytmisk – f.eks. 3 inn, 2 ut","Bygg opp distanse gradvis"] },
+  "Sykling": { muscles:["Quads","Hamstrings","Hjerte/lunge"], tips:["Juster setet slik at kneet er lett bøyd ved bunn","Jevnt tråkk – unngå å stampe","Hold høy kadens (80–100 RPM) for utholdenhet","Len deg lett fremover"] },
+  "Roing": { muscles:["Rygg","Bein","Armer"], tips:["Driv med bena – ikke ryggen","Sekvens: bein → lean back → trekk","Hold skuldrene ned","Kjerne aktiv gjennom hele trekket"] },
+  "Hoppetau": { muscles:["Legg","Kondisjon"], tips:["Lette landfall på tærne","Håndleddene roterer tauet","Hold rett rygg","Start med enkle hopp og bygg opp"] },
+  "Stairmaster": { muscles:["Glutes","Quads","Kondisjon"], tips:["Ikke len deg for mye på rekkverket","Fullt steg – ikke halve trinn","God hastighet uten å springe","Øker hjertefrekvensen effektivt"] },
+  "Ellipse": { muscles:["Hele kroppen","Kondisjon"], tips:["Oppreist holdning","Bruk armene aktivt","Jevnt rytmisk tråkk","Lav belastning på ledd"] },
+  "Svømming": { muscles:["Hele kroppen"], tips:["Jevnt åndedrett","Effektiv teknikk er viktigere enn kraft","Veksle mellom stiler","Lavt skaderisiko"] },
+  "Assault bike": { muscles:["Hele kroppen","Kondisjon"], tips:["Bruk armer og bein simultant","Korte intervaller er svært effektive","Dyr på energi – pass på intensiteten","Hold skuldrene nede"] },
+  "Ski erg": { muscles:["Rygg","Armer","Kondisjon"], tips:["Trekk tauene ned med stor kraft","Knær litt bøyd","Hev armene til over hodet mellom hvert drag","Effektivt kondisjonstrening"] },
+  "Battle ropes": { muscles:["Skuldre","Kjerne","Kondisjon"], tips:["Hold stabil midtposisjon","Skift mellom bølger, slams og rotasjoner","Høy intensitet – korte intervaller","God for kondisjon og skulder-utholdenhet"] },
+  // HELKROPP
+  "Burpees": { muscles:["Hele kroppen","Kondisjon"], tips:["Stå, fall ned, push-up, hopp opp – én sømløs bevegelse","Hastigheten bestemmer intensiteten","Jobb med teknikk, ikke bare tempo","Effektiv uten utstyr"] },
+  "Kettlebell svings": { muscles:["Glutes","Hamstrings","Rygg"], tips:["Driv med hofter – ikke skuldrene","Snap hofter frem og klem glutes i toppen","Kettlebellen er en pendel – ikke et løft","Hold ryggen flat, ikke rund"] },
+  "Tyrkisk get-up": { muscles:["Kjerne","Skulder","Hele kroppen"], tips:["Arm med kettlebell peker alltid mot taket","Sett deg opp kontrollert – ett steg av gangen","Hold blikket på kettlebellen","Lær bevegelsen uten vekt først"] },
+  "Clean & press": { muscles:["Hele kroppen"], tips:["Clean: trekk stangen opp og catch i front rack","Press: eksplosiv press over hodet","Teknisk – lær separat først","Godt for kraft og kondisjon"] },
+  "Thruster": { muscles:["Quads","Skulder","Kjerne"], tips:["Frontknebøy + push press i én bevegelse","Bruk benbevegelsen til å drive stangen opp","Hold stangen i front rack mellom reps","Intenst – vanlig i CrossFit"] },
+  "Farmers walk": { muscles:["Grep","Trapezius","Kjerne"], tips:["Hold tunge hantler/kettlebells","Rett rygg, skuldrene trukket bakover","Gå med korte, kontrollerte steg","Utmerket for grep og bærekraft"] },
+  "Sandbag carry": { muscles:["Kjerne","Rygg","Bein"], tips:["Løft med god rygg-stilling","Hold sandbagen tett mot kroppen","Rett rygg under bæringen","Funksjonell styrke"] },
+  "Box jumps": { muscles:["Quads","Glutes","Kraftutvikling"], tips:["Eksplosivt av fra begge bena","Myk landing på kassen","Stå opp etter landing","Steg ned – ikke hopp ned for sikkerhets skyld"] },
+  "Wall ball": { muscles:["Quads","Skulder","Kjerne"], tips:["Medisinball mot veggen fra knebøy-posisjon","Bruk benbevegelsen til å kaste ballen opp","Catch og gå rett ned i neste knebøy","Vanlig i CrossFit WODs"] },
+  "Sled push": { muscles:["Bein","Kjerne","Kondisjon"], tips:["Lav kroppsstilling – len fremover","Korte kraftige steg","Hold ryggen rett","God kondisjon og benstyrke"] },
+  "Bear crawl": { muscles:["Kjerne","Skulder","Koordinasjon"], tips:["Kne holder noen cm over gulvet","Kontralateral bevegelse – høyre arm/venstre ben","Hold ryggen flat","Start sakte med fokus på teknikk"] },
+  "Man maker": { muscles:["Hele kroppen"], tips:["Push-up, row, clean og press i én kompleks","Krevende – bruk lett vekt","Fokus på teknikk","God finisher-øvelse"] },
+  "Snatch": { muscles:["Hele kroppen","Eksplosivkraft"], tips:["En av de teknisk krevende løftene","Bredt grep – stangen goes direkte over hodet i ett","Bygg opp med overhead squat og hang snatch","Anbefal profesjonell veiledning"] },
+  "Clean": { muscles:["Hele kroppen"], tips:["Stangen trekkes fra gulvet til front rack","Rask albue-rotasjon i catch","God start for olympisk løfting","Bygg opp gradvis med teknikk"] },
+  "Jerk": { muscles:["Skulder","Bein","Kjerne"], tips:["Fra front rack – dip og drive","Enten split jerk eller power jerk","Teknisk – lær separat","Kombineres med clean for clean & jerk"] },
 };
 
 const EMPTY_FORM = { name: "Benkpress", sets: "", reps: "", weight: "", group: "Bryst", customName: "" };
@@ -1386,6 +1559,9 @@ export default function App() {
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ type:"styrke", title:"", exercise:"Benkpress", exerciseGroup:"Bryst", target:"", deadline:"", unit:"kg", current:"" });
 
+  // Exercise demo modal
+  const [demoExercise, setDemoExercise] = useState(null);
+
   // Stats
   const [selectedExercise, setSelectedExercise] = useState("");
   const totalSessions = history.length;
@@ -1820,6 +1996,7 @@ export default function App() {
                                   <div key={s.id} style={{width:"7px",height:"7px",borderRadius:"50%",background:s.done?"#4caf50":"var(--border)"}} />
                                 ))}
                               </div>
+                              <button className="demo-info-btn" onClick={e => { e.stopPropagation(); setDemoExercise(ex.name); }}>ℹ</button>
                               <button className="btn-remove" style={{flexShrink:0}} onClick={e => { e.stopPropagation(); setExercises(prev => prev.filter(e2 => e2.id !== ex.id)); }}>×</button>
                             </div>
                           </div>
@@ -1834,6 +2011,7 @@ export default function App() {
                           <div style={{display:"flex",alignItems:"center",padding:"10px 14px",borderBottom:"1px solid var(--border)",gap:"8px"}}>
                             <button onClick={toggleCollapse} title="Komprimer" style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:".75rem",fontFamily:"'DM Mono',monospace",padding:"0 2px",flexShrink:0}}>▼</button>
                             <div className="exercise-name" style={{flex:1}}>{ex.name}</div>
+                            <button className="demo-info-btn" onClick={() => setDemoExercise(ex.name)}>ℹ TEKNIKK</button>
                             {allFilled && !allDone && (
                               <button onClick={markAllDone} style={{fontSize:".6rem",fontFamily:"'DM Mono',monospace",letterSpacing:"1px",background:"none",border:"1px solid #4caf50",color:"#4caf50",padding:"3px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>ALT FERDIG ✓</button>
                             )}
@@ -3430,6 +3608,48 @@ export default function App() {
 
         </div>
       </div>
+
+      {/* ── EXERCISE DEMO MODAL ── */}
+      {demoExercise && (() => {
+        const info = EXERCISE_INFO[demoExercise];
+        const ytQuery = encodeURIComponent(demoExercise + " teknikk øvelse form");
+        return (
+          <div className="demo-overlay" onClick={() => setDemoExercise(null)}>
+            <div className="demo-modal" onClick={e => e.stopPropagation()}>
+              <div className="demo-modal-header">
+                <div className="demo-modal-title">{demoExercise}</div>
+                <button className="demo-modal-close" onClick={() => setDemoExercise(null)}>✕</button>
+              </div>
+
+              {info ? (
+                <>
+                  <div className="demo-muscles">
+                    {info.muscles.map(m => <span key={m} className="demo-muscle-tag">{m}</span>)}
+                  </div>
+                  <div className="demo-tips">
+                    {info.tips.map((tip, i) => (
+                      <div key={i} className="demo-tip">
+                        <span className="demo-tip-num">{i + 1}</span>
+                        <span>{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="demo-no-info">Ingen spesifikke tips registrert for denne øvelsen ennå.</div>
+              )}
+
+              <div className="demo-modal-footer">
+                <button className="btn-yt" onClick={() => window.open(`https://www.youtube.com/results?search_query=${ytQuery}`, '_blank')}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                  SE VIDEO PÅ YOUTUBE
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </>
   );
 }

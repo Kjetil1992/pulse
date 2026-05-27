@@ -295,6 +295,46 @@ const styles = `
   .user-email { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted2); letter-spacing: 1px; }
 `;
 
+const PROGRAM_TEMPLATES = [
+  {
+    name: "Push – Bryst / Skuldre / Triceps",
+    exercises: [
+      { group:"Bryst",    name:"Benkpress",             sets:"4", reps:"8",  weight:"" },
+      { group:"Bryst",    name:"Skråbenkpress (opp)",    sets:"3", reps:"10", weight:"" },
+      { group:"Bryst",    name:"Hantelflyes",             sets:"3", reps:"12", weight:"" },
+      { group:"Skuldre",  name:"Militærpress",            sets:"4", reps:"8",  weight:"" },
+      { group:"Skuldre",  name:"Sidehev",                 sets:"3", reps:"15", weight:"" },
+      { group:"Skuldre",  name:"Frontløft",               sets:"3", reps:"12", weight:"" },
+      { group:"Triceps",  name:"Triceps pushdown",        sets:"3", reps:"12", weight:"" },
+      { group:"Triceps",  name:"Skull crushers",          sets:"3", reps:"10", weight:"" },
+    ],
+  },
+  {
+    name: "Pull – Rygg / Biceps",
+    exercises: [
+      { group:"Rygg",    name:"Markløft",                sets:"4", reps:"5",  weight:"" },
+      { group:"Rygg",    name:"Chins",                   sets:"4", reps:"8",  weight:"" },
+      { group:"Rygg",    name:"Sittende roing",           sets:"3", reps:"10", weight:"" },
+      { group:"Rygg",    name:"Lat-pulldown",             sets:"3", reps:"12", weight:"" },
+      { group:"Rygg",    name:"Ettarms hantelroing",      sets:"3", reps:"10", weight:"" },
+      { group:"Biceps",  name:"Stangcurl",                sets:"3", reps:"10", weight:"" },
+      { group:"Biceps",  name:"Hammercurl",               sets:"3", reps:"12", weight:"" },
+    ],
+  },
+  {
+    name: "Legs – Bein",
+    exercises: [
+      { group:"Bein", name:"Knebøy",             sets:"4", reps:"8",  weight:"" },
+      { group:"Bein", name:"Rumensk markløft",   sets:"3", reps:"10", weight:"" },
+      { group:"Bein", name:"Beinpress",          sets:"3", reps:"12", weight:"" },
+      { group:"Bein", name:"Bulgarske utfall",   sets:"3", reps:"10", weight:"" },
+      { group:"Bein", name:"Leg curl",           sets:"3", reps:"12", weight:"" },
+      { group:"Bein", name:"Leg extension",      sets:"3", reps:"12", weight:"" },
+      { group:"Bein", name:"Kalvehev",           sets:"4", reps:"15", weight:"" },
+    ],
+  },
+];
+
 const EXERCISES_BY_GROUP = {
   "Bryst": ["Benkpress","Skråbenkpress (opp)","Skråbenkpress (ned)","Hantelbenkpress","Hantelflyes","Kabelkryss","Dips (bryst)","Push-up"],
   "Rygg": ["Markløft","Chins","Pull-ups","Sittende roing","Stående roing","Ettarms hantelroing","Lat-pulldown","Hyperextensions","Omvendte flyes"],
@@ -1376,8 +1416,45 @@ export default function App() {
 
               {progSaved && <div className="save-msg" style={{marginBottom:"16px"}}>✓ PROGRAM LAGRET</div>}
 
+              {/* Maler */}
+              {!creatingProgram && (
+                <div style={{marginBottom:"28px"}}>
+                  <div className="graph-title" style={{marginBottom:"12px"}}>PUSH / PULL / LEGS — MALER</div>
+                  {PROGRAM_TEMPLATES.map(tpl => {
+                    const alreadyAdded = programs.some(p => p.name === tpl.name);
+                    return (
+                      <div key={tpl.name} className="program-card" style={{marginBottom:"10px"}}>
+                        <div className="program-header">
+                          <div className="program-name">{tpl.name}</div>
+                          <div className="program-badge">{tpl.exercises.length} øvelser</div>
+                        </div>
+                        <div className="program-body">
+                          {tpl.exercises.map((ex, i) => (
+                            <div key={i} className="prog-ex-row">
+                              <div className="prog-ex-name">{ex.name}</div>
+                              <div className="prog-ex-detail">{ex.sets}×{ex.reps}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="program-footer">
+                          {alreadyAdded ? (
+                            <span style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"var(--muted)",letterSpacing:"1px"}}>✓ Allerede lagt til</span>
+                          ) : (
+                            <button className="btn-load" onClick={async () => {
+                              const exs = tpl.exercises.map(e => ({...e, id: Date.now() + Math.random()}));
+                              const { data } = await supabase.from("programs").insert({ user_id: user.id, name: tpl.name, exercises: exs }).select().single();
+                              if (data) { setPrograms(prev => [data, ...prev]); setProgSaved(true); setTimeout(() => setProgSaved(false), 2500); }
+                            }}>+ LEGG TIL</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {programs.length === 0 && !creatingProgram && (
-                <div className="empty">ingen programmer ennå</div>
+                <div className="empty">ingen egne programmer ennå</div>
               )}
 
               {programs.map(program => (

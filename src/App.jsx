@@ -2674,11 +2674,20 @@ export default function App() {
 
             return (
               <>
-                <div style={{display:"flex",alignItems:"baseline",gap:"12px",marginBottom:"20px"}}>
-                  <div className="section-title">UKE<span>SPLAN</span></div>
-                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"var(--muted)",letterSpacing:"1px"}}>
-                    {new Date().toLocaleDateString("nb-NO",{day:"numeric",month:"long",year:"numeric"})}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px",flexWrap:"wrap",gap:"10px"}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:"12px"}}>
+                    <div className="section-title">UKE<span>SPLAN</span></div>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"var(--muted)",letterSpacing:"1px"}}>
+                      {new Date().toLocaleDateString("nb-NO",{day:"numeric",month:"long",year:"numeric"})}
+                    </div>
                   </div>
+                  <button
+                    onClick={() => { setSection("styrke"); setTab("oversikt"); setSubNav("kalender"); }}
+                    style={{display:"flex",alignItems:"center",gap:"6px",background:"none",border:"1px solid var(--border)",color:"var(--muted)",fontFamily:"'DM Mono',monospace",fontSize:".65rem",letterSpacing:"1px",padding:"7px 14px",cursor:"pointer",transition:"all .15s",textTransform:"uppercase"}}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor="#F97316";e.currentTarget.style.color="#F97316";}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--muted)";}}>
+                    📅 Se kalender
+                  </button>
                 </div>
 
                 <div className="plan-week">

@@ -762,6 +762,7 @@ export default function App() {
   const [subNav, setSubNav] = useState("history");
   const [runSubNav, setRunSubNav] = useState("stats");
   const [cycleSubNav, setCycleSubNav] = useState("stats");
+  const [progSubNav, setProgSubNav] = useState("mine");
   const [runs, setRuns] = useState([]);
   const [runForm, setRunForm] = useState({ distance: "", hours: "", minutes: "", seconds: "", type: "Vei", notes: "" });
   const [runSaved, setRunSaved] = useState(false);
@@ -1490,111 +1491,130 @@ export default function App() {
           {/* ── PROGRAMMER ── */}
           {tab === "programs" && (
             <>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
-                <div className="section-title">TRENINGS<span>PROGRAM</span></div>
-                {!creatingProgram && (
-                  <button className="btn-orange" onClick={() => setCreatingProgram(true)}>+ NYTT PROGRAM</button>
-                )}
+              <div className="subnav" style={{marginBottom:"24px"}}>
+                <button className={`subnav-btn${progSubNav==="mine"?" active":""}`} onClick={() => { setProgSubNav("mine"); setCreatingProgram(false); }}>Mine programmer</button>
+                <button className={`subnav-btn${progSubNav==="maler"?" active":""}`} onClick={() => { setProgSubNav("maler"); setCreatingProgram(false); }}>Tilgjengelige</button>
               </div>
 
-              {creatingProgram && (
-                <div className="new-program-form active" style={{marginBottom:"24px"}}>
-                  <div className="field program-name-input">
-                    <label>Programnavn</label>
-                    <input value={progName} onChange={e => setProgName(e.target.value)} placeholder='f.eks. "Push dag A"' />
+              {/* ── MINE PROGRAMMER ── */}
+              {progSubNav === "mine" && (
+                <>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
+                    <div className="section-title">MINE<span> PROGRAM</span></div>
+                    {!creatingProgram && (
+                      <button className="btn-orange" onClick={() => setCreatingProgram(true)}>+ NYTT</button>
+                    )}
                   </div>
-                  <ExerciseForm form={progForm} setForm={setProgForm} onAdd={addProgExercise} />
-                  {progExercises.length > 0 && (
-                    <div style={{marginTop:"12px",marginBottom:"12px"}}>
-                      {progExercises.map(ex => (
-                        <div key={ex.id} className="exercise-item">
-                          <div className="exercise-name">{ex.name}</div>
-                          <div><div className="exercise-val">{ex.sets||"–"}</div><div className="exercise-unit">sett</div></div>
-                          <div><div className="exercise-val">{ex.reps||"–"}</div><div className="exercise-unit">reps</div></div>
-                          <div><div className="exercise-val">{ex.weight||"–"}</div><div className="exercise-unit">kg</div></div>
-                          <button className="btn-remove" onClick={() => setProgExercises(prev => prev.filter(e => e.id !== ex.id))}>×</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="save-row">
-                    <button className="btn-outline" onClick={saveProgram} disabled={!progName.trim()||!progExercises.length}>
-                      {editingId ? "OPPDATER" : "LAGRE PROGRAM"}
-                    </button>
-                    <button className="btn-ghost" onClick={cancelProgram}>avbryt</button>
-                  </div>
-                </div>
-              )}
 
-              {progSaved && <div className="save-msg" style={{marginBottom:"16px"}}>✓ PROGRAM LAGRET</div>}
-
-              {/* Maler */}
-              {!creatingProgram && PROGRAM_TEMPLATES.map(cat => (
-                <div key={cat.category} style={{marginBottom:"28px"}}>
-                  <div className="graph-title" style={{marginBottom:"12px"}}>{cat.category}</div>
-                  {cat.programs.map(tpl => {
-                    const alreadyAdded = programs.some(p => p.name === tpl.name);
-                    return (
-                      <div key={tpl.name} className="program-card" style={{marginBottom:"10px"}}>
-                        <div className="program-header">
-                          <div className="program-name">{tpl.name}</div>
-                          <div className="program-badge">{tpl.exercises.length} øvelser</div>
-                        </div>
-                        <div className="program-body">
-                          {tpl.exercises.map((ex, i) => (
-                            <div key={i} className="prog-ex-row">
-                              <div className="prog-ex-name">{ex.name}</div>
-                              <div className="prog-ex-detail">{ex.sets}×{ex.reps}{ex.name === "Planke" || ex.name === "Sidplanke" ? "s" : ""}</div>
+                  {creatingProgram && (
+                    <div className="new-program-form active" style={{marginBottom:"24px"}}>
+                      <div className="field program-name-input">
+                        <label>Programnavn</label>
+                        <input value={progName} onChange={e => setProgName(e.target.value)} placeholder='f.eks. "Push dag A"' />
+                      </div>
+                      <ExerciseForm form={progForm} setForm={setProgForm} onAdd={addProgExercise} />
+                      {progExercises.length > 0 && (
+                        <div style={{marginTop:"12px",marginBottom:"12px"}}>
+                          {progExercises.map(ex => (
+                            <div key={ex.id} className="exercise-item">
+                              <div className="exercise-name">{ex.name}</div>
+                              <div><div className="exercise-val">{ex.sets||"–"}</div><div className="exercise-unit">sett</div></div>
+                              <div><div className="exercise-val">{ex.reps||"–"}</div><div className="exercise-unit">reps</div></div>
+                              <div><div className="exercise-val">{ex.weight||"–"}</div><div className="exercise-unit">kg</div></div>
+                              <button className="btn-remove" onClick={() => setProgExercises(prev => prev.filter(e => e.id !== ex.id))}>×</button>
                             </div>
                           ))}
                         </div>
-                        <div className="program-footer">
-                          {alreadyAdded ? (
-                            <span style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"var(--muted)",letterSpacing:"1px"}}>✓ Allerede lagt til</span>
-                          ) : (
-                            <button className="btn-load" onClick={async () => {
-                              const exs = tpl.exercises.map(e => ({...e, id: Date.now() + Math.random()}));
-                              const { data } = await supabase.from("programs").insert({ user_id: user.id, name: tpl.name, exercises: exs }).select().single();
-                              if (data) { setPrograms(prev => [data, ...prev]); setProgSaved(true); setTimeout(() => setProgSaved(false), 2500); }
-                            }}>+ LEGG TIL</button>
-                          )}
+                      )}
+                      <div className="save-row">
+                        <button className="btn-outline" onClick={saveProgram} disabled={!progName.trim()||!progExercises.length}>
+                          {editingId ? "OPPDATER" : "LAGRE PROGRAM"}
+                        </button>
+                        <button className="btn-ghost" onClick={cancelProgram}>avbryt</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {progSaved && <div className="save-msg" style={{marginBottom:"16px"}}>✓ PROGRAM LAGRET</div>}
+
+                  {programs.length === 0 && !creatingProgram && (
+                    <div className="empty" style={{marginBottom:"16px"}}>ingen egne programmer ennå
+                      <div style={{marginTop:"12px"}}>
+                        <button className="btn-outline" style={{fontSize:".8rem",padding:"8px 16px"}} onClick={() => setProgSubNav("maler")}>Se tilgjengelige maler →</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {programs.map(program => (
+                    <div key={program.id} className="program-card">
+                      <div className="program-header">
+                        <div className="program-name">{program.name}</div>
+                        <div className="program-badge">{program.exercises.length} øvelser</div>
+                        <div className="program-actions">
+                          <button className="btn-icon" title="Rediger" onClick={() => startEdit(program)}>✏️</button>
+                          <button className="btn-icon" title="Slett" onClick={() => deleteProgram(program.id)}>🗑</button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
-
-              {programs.length === 0 && !creatingProgram && (
-                <div className="empty">ingen egne programmer ennå</div>
+                      <div className="program-body">
+                        {program.exercises.map((ex, i) => (
+                          <div key={i} className="prog-ex-row">
+                            <div className="prog-ex-name">{ex.name}</div>
+                            <div className="prog-ex-detail">
+                              {ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : ""}
+                              {ex.weight ? ` @ ${ex.weight}kg` : ""}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="program-footer">
+                        <button className="btn-load" onClick={() => loadProgram(program)}>▶ START ØKT</button>
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
 
-              {programs.map(program => (
-                <div key={program.id} className="program-card">
-                  <div className="program-header">
-                    <div className="program-name">{program.name}</div>
-                    <div className="program-badge">{program.exercises.length} øvelser</div>
-                    <div className="program-actions">
-                      <button className="btn-icon" title="Rediger" onClick={() => startEdit(program)}>✏️</button>
-                      <button className="btn-icon" title="Slett" onClick={() => deleteProgram(program.id)}>🗑</button>
+              {/* ── TILGJENGELIGE MALER ── */}
+              {progSubNav === "maler" && (
+                <>
+                  {progSaved && <div className="save-msg" style={{marginBottom:"16px"}}>✓ PROGRAM LAGT TIL</div>}
+                  {PROGRAM_TEMPLATES.map(cat => (
+                    <div key={cat.category} style={{marginBottom:"28px"}}>
+                      <div className="graph-title" style={{marginBottom:"12px"}}>{cat.category}</div>
+                      {cat.programs.map(tpl => {
+                        const alreadyAdded = programs.some(p => p.name === tpl.name);
+                        return (
+                          <div key={tpl.name} className="program-card" style={{marginBottom:"10px"}}>
+                            <div className="program-header">
+                              <div className="program-name">{tpl.name}</div>
+                              <div className="program-badge">{tpl.exercises.length} øvelser</div>
+                            </div>
+                            <div className="program-body">
+                              {tpl.exercises.map((ex, i) => (
+                                <div key={i} className="prog-ex-row">
+                                  <div className="prog-ex-name">{ex.name}</div>
+                                  <div className="prog-ex-detail">{ex.sets}×{ex.reps}{ex.name==="Planke"||ex.name==="Sidplanke"?"s":""}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="program-footer">
+                              {alreadyAdded ? (
+                                <span style={{fontFamily:"'DM Mono',monospace",fontSize:".65rem",color:"#4caf50",letterSpacing:"1px"}}>✓ Lagt til i Mine programmer</span>
+                              ) : (
+                                <button className="btn-load" onClick={async () => {
+                                  const exs = tpl.exercises.map(e => ({...e, id: Date.now() + Math.random()}));
+                                  const { data } = await supabase.from("programs").insert({ user_id: user.id, name: tpl.name, exercises: exs }).select().single();
+                                  if (data) { setPrograms(prev => [data, ...prev]); setProgSaved(true); setTimeout(() => setProgSaved(false), 2500); }
+                                }}>+ LEGG TIL</button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div className="program-body">
-                    {program.exercises.map((ex, i) => (
-                      <div key={i} className="prog-ex-row">
-                        <div className="prog-ex-name">{ex.name}</div>
-                        <div className="prog-ex-detail">
-                          {ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : ""}
-                          {ex.weight ? ` @ ${ex.weight}kg` : ""}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="program-footer">
-                    <button className="btn-load" onClick={() => loadProgram(program)}>▶ START ØKT</button>
-                  </div>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
             </>
           )}
 

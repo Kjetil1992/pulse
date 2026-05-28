@@ -371,6 +371,24 @@ const styles = `
   .demo-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); }
   .btn-yt { background: #FF0000; border: none; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1.5px; padding: 11px 18px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center; transition: opacity .15s; }
   .btn-yt:hover { opacity: .85; }
+  /* PROGRESSION SUGGESTION */
+  .prog-suggestion { background: var(--surface2); border-left: 3px solid #4caf50; padding: 8px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; animation: slideIn .2s ease; }
+  .prog-suggestion.same { border-left-color: #F97316; }
+  .prog-suggestion-text { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--text); flex: 1; letter-spacing: .5px; }
+  .prog-suggestion-badge { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1px; white-space: nowrap; }
+  .prog-use-btn { background: none; border: 1px solid #4caf50; color: #4caf50; font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px; padding: 3px 10px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .prog-use-btn:hover { background: #4caf50; color: #000; }
+  .prog-use-btn.same { border-color: #F97316; color: #F97316; }
+  .prog-use-btn.same:hover { background: #F97316; color: #000; }
+
+  /* MUSCLE BALANCE */
+  .balance-grid { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .balance-row { display: flex; align-items: center; gap: 10px; }
+  .balance-label { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); width: 70px; flex-shrink: 0; }
+  .balance-bar-bg { flex: 1; height: 6px; background: var(--surface2); overflow: hidden; }
+  .balance-bar-fill { height: 100%; transition: width .5s ease; }
+  .balance-count { font-family: 'DM Mono', monospace; font-size: .6rem; color: var(--muted); width: 28px; text-align: right; flex-shrink: 0; }
+
   .demo-info-btn { background: none; border: 1px solid #F97316; color: #F97316; font-family: 'DM Mono', monospace; font-size: .55rem; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; cursor: pointer; transition: all .15s; flex-shrink: 0; line-height: 1.6; opacity: .75; }
   .demo-info-btn:hover { opacity: 1; background: rgba(249,115,22,0.08); }
   .demo-no-info { font-family: 'DM Mono', monospace; font-size: .75rem; color: var(--muted); padding: 16px 18px; }
@@ -740,7 +758,7 @@ function totalVolume(exs) {
   }, 0);
 }
 
-function ExerciseForm({ form, setForm, onAdd }) {
+function ExerciseForm({ form, setForm, onAdd, lastData }) {
   const repsRef = React.useRef(null);
   const weightRef = React.useRef(null);
   const addRef = React.useRef(null);
@@ -769,6 +787,22 @@ function ExerciseForm({ form, setForm, onAdd }) {
           <label>Navn på øvelse</label>
           <input autoFocus value={form.customName||""} onChange={e => setForm(f => ({ ...f, customName: e.target.value }))}
             onKeyDown={e => e.key === "Enter" && next(repsRef)} placeholder="Skriv inn øvelsesnavn..." />
+        </div>
+      )}
+      {lastData && (
+        <div className={`prog-suggestion${lastData.allDone ? "" : " same"}`}>
+          <div className="prog-suggestion-text">
+            Forrige: {lastData.numSets}×{lastData.reps} @ {lastData.maxWeight} kg
+            <span style={{color:"var(--muted)",marginLeft:"6px"}}>{lastData.date}</span>
+          </div>
+          <div className={`prog-suggestion-badge`} style={{color: lastData.allDone ? "#4caf50" : "#F97316"}}>
+            {lastData.allDone ? `↑ ${lastData.suggestedWeight} kg` : `→ ${lastData.maxWeight} kg`}
+          </div>
+          <button
+            className={`prog-use-btn${lastData.allDone ? "" : " same"}`}
+            onClick={() => setForm(f => ({ ...f, weight: String(lastData.suggestedWeight), reps: String(lastData.reps), sets: String(lastData.numSets) }))}>
+            Bruk
+          </button>
         </div>
       )}
       <div className="form-row">
@@ -1849,6 +1883,45 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* ── MUSKELGRUPPE-BALANSE ── */}
+                {(() => {
+                  const thirtyDaysAgo = new Date(now);
+                  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                  const MAIN_GROUPS = ["Bryst","Rygg","Skuldre","Biceps","Triceps","Bein","Mage"];
+                  const freq = {};
+                  MAIN_GROUPS.forEach(g => { freq[g] = 0; });
+                  history.filter(s => new Date(s.date_key) >= thirtyDaysAgo).forEach(s => {
+                    const groups = [...new Set(s.exercises.map(e => e.group).filter(g => MAIN_GROUPS.includes(g)))];
+                    groups.forEach(g => { freq[g] = (freq[g]||0) + 1; });
+                  });
+                  const max = Math.max(...Object.values(freq), 1);
+                  if (max === 0) return null;
+                  return (
+                    <div style={{background:"var(--surface)",border:"1px solid var(--border)",padding:"18px 20px",marginBottom:"20px",position:"relative",overflow:"hidden"}}>
+                      <div style={{position:"absolute",top:0,left:0,width:"3px",height:"100%",background:"#3b82f6"}} />
+                      <div className="dash-label" style={{marginBottom:"4px"}}>Muskelbalanse — siste 30 dager</div>
+                      <div className="balance-grid">
+                        {MAIN_GROUPS.map(g => {
+                          const count = freq[g] || 0;
+                          const pct = Math.round((count / max) * 100);
+                          const color = count === 0 ? "#444" : count <= 1 ? "#e53e3e" : count <= 3 ? "#F97316" : "#4caf50";
+                          const hint = count === 0 ? "ikke trent" : count === 1 ? "lite" : count <= 3 ? "bra" : "mye";
+                          return (
+                            <div key={g} className="balance-row">
+                              <div className="balance-label">{g}</div>
+                              <div className="balance-bar-bg">
+                                <div className="balance-bar-fill" style={{width:`${pct}%`,background:color}} />
+                              </div>
+                              <div className="balance-count" style={{color}}>{count === 0 ? "–" : count}</div>
+                              <div style={{fontFamily:"'DM Mono',monospace",fontSize:".55rem",color,width:"52px",flexShrink:0}}>{hint}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="dash-cta">
                   <button className="btn-orange" onClick={() => setTab("log")}>▶ LOGG NY ØKT</button>
                   {programs.length > 0 && (
@@ -1908,7 +1981,20 @@ export default function App() {
                 </div>
               )}
 
-              <ExerciseForm form={logForm} setForm={setLogForm} onAdd={addLogExercise} />
+              <ExerciseForm form={logForm} setForm={setLogForm} onAdd={addLogExercise} lastData={(() => {
+                const name = logForm.name === "__annet__" ? (logForm.customName||"").trim() : logForm.name;
+                if (!name) return null;
+                const lastSession = history.find(s => s.exercises.some(e => e.name === name));
+                if (!lastSession) return null;
+                const lastEx = lastSession.exercises.find(e => e.name === name);
+                if (!lastEx || !Array.isArray(lastEx.sets) || lastEx.sets.length === 0) return null;
+                const maxWeight = Math.max(...lastEx.sets.map(s => parseFloat(s.weight)||0));
+                if (!maxWeight) return null;
+                const allDone = lastEx.sets.every(s => s.done);
+                const suggestedWeight = allDone ? Math.round((maxWeight + 2.5) * 4) / 4 : maxWeight;
+                const reps = lastEx.sets[0]?.reps || "";
+                return { maxWeight, suggestedWeight, reps, numSets: lastEx.sets.length, allDone, date: lastSession.date_key };
+              })()} />
 
               {exercises.length > 0 && (() => {
                 const totalSetsCount = exercises.reduce((s, ex) => s + (Array.isArray(ex.sets) ? ex.sets.length : 0), 0);
